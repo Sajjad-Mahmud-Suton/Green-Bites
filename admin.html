@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Green Bites - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-light">
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark bg-dark sticky-top shadow">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1 fs-3 fw-bold">Green Bites Admin</span>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD GRID -->
+  <div class="container-fluid py-3">
+    <div class="row g-3">
+      <!-- MENU MANAGEMENT -->
+      <div class="col-lg-4">
+        <h4 class="mb-3 text-success">Menu</h4>
+        <form id="menuForm" class="card p-3 mb-3 shadow-sm">
+          <input type="hidden" id="menuId">
+          <div class="mb-2">
+            <label class="form-label">Item name</label>
+            <input type="text" class="form-control" id="menuName" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Price</label>
+            <input type="number" class="form-control" id="menuPrice" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="menuDesc" rows="2"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Image URL (manual for now)</label>
+            <input type="text" class="form-control" id="menuImgUrl" placeholder="images/biriyani.jpg">
+            <!-- Future: file upload -->
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="menuSpecial">
+            <label class="form-check-label" for="menuSpecial">Today special</label>
+          </div>
+          <button class="btn btn-success" type="submit">Save</button>
+          <button class="btn btn-secondary btn-sm ms-2" type="button" id="menuReset">Reset</button>
+        </form>
+        <ul id="menuList" class="list-group small mb-3"></ul>
+      </div>
+
+      <!-- ORDER MANAGEMENT -->
+      <div class="col-lg-4">
+        <h4 class="mb-3 text-info">Orders</h4>
+        <div id="adminOrders" class="list-group small mb-3"></div>
+      </div>
+
+      <!-- TABLES + COMPLAINTS -->
+      <div class="col-lg-4">
+        <h4 class="mb-3 text-success">Tables</h4>
+        <div id="adminTables" class="row row-cols-2 g-2 mb-4"></div>
+
+        <h4 class="mb-3 text-danger">Complaints</h4>
+        <div id="adminComplaints" class="list-group small mb-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer (optionally add) -->
+  <footer class="bg-dark text-light py-3 mt-4">
+    <div class="container text-center">
+      &copy; 2024 Green Bites Admin Dashboard
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
