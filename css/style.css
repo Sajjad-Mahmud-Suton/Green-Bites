@@ -77,6 +77,24 @@
     box-shadow: 0 2px 6px rgba(60,150,60,0.09);
   }
   
+  /* Consistent card height and layout */
+  .menu-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 140px;
+  }
+  .card-title-price {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .price-badge {
+    font-size: 0.9em;
+    padding: 0.2rem 0.5rem;
+    align-self: flex-start;
+  }
+  
   /* Extra modern look for card text/title */
   .card-title, h3 {
     font-family: 'Segoe UI', 'Poppins', sans-serif;
