@@ -2,80 +2,1169 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Green Bites - Admin</title>
+  <title>GreenBites Admin Panel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+  <!-- Global styles (keep existing) -->
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- Admin dashboard specific styles -->
+  <style>
+    :root {
+      --gb-bg: #f5f7fb;
+      --gb-surface: #ffffff;
+      --gb-primary: #22a45a;
+      --gb-primary-soft: rgba(34, 164, 90, 0.12);
+      --gb-primary-dark: #1a8247;
+      --gb-text-main: #1c2533;
+      --gb-text-muted: #6b7280;
+      --gb-border-subtle: #e2e8f0;
+      --gb-danger: #e53e3e;
+      --gb-warning: #d97706;
+      --gb-info: #2563eb;
+      --gb-radius-lg: 18px;
+      --gb-radius-md: 12px;
+      --gb-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.09);
+      --gb-shadow-subtle: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body.admin-body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--gb-text-main);
+      background: radial-gradient(circle at top left, #e6f7ed 0, transparent 50%),
+                  radial-gradient(circle at bottom right, #e0f2fe 0, transparent 55%),
+                  var(--gb-bg);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAVBAR */
+    .admin-navbar {
+      position: fixed;
+      inset-inline: 0;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .admin-navbar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .admin-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 0.03em;
+      color: var(--gb-text-main);
+    }
+
+    .admin-brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 25% 0, #6ee7b7, #22c55e);
+      color: #ecfdf5;
+      box-shadow: 0 10px 22px rgba(22, 163, 74, 0.45);
+      font-size: 1.1rem;
+    }
+
+    .admin-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .admin-nav-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 0.95rem;
+      font-size: 0.84rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      color: var(--gb-text-main);
+      background: transparent;
+      transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+
+    .admin-nav-btn span.badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #f97316;
+    }
+
+    .admin-nav-btn:hover {
+      background: rgba(15, 23, 42, 0.05);
+      transform: translateY(-1px);
+    }
+
+    .admin-nav-btn-primary {
+      background: var(--gb-primary);
+      color: #ecfdf5;
+      box-shadow: 0 10px 28px rgba(22, 163, 74, 0.45);
+    }
+
+    .admin-nav-btn-primary:hover {
+      background: var(--gb-primary-dark);
+      transform: translateY(-1px) translateZ(0);
+    }
+
+    .admin-profile {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .admin-profile:hover {
+      background: rgba(148, 163, 184, 0.19);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+    }
+
+    .admin-profile-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ecfdf5;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .admin-profile-name {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--gb-text-main);
+    }
+
+    .admin-profile-role {
+      font-size: 0.7rem;
+      color: var(--gb-text-muted);
+    }
+
+    .admin-profile-chevron {
+      font-size: 0.8rem;
+      color: var(--gb-text-muted);
+    }
+
+    .admin-profile-menu {
+      position: absolute;
+      inset-inline-end: 0;
+      top: calc(100% + 0.4rem);
+      min-width: 180px;
+      padding: 0.45rem 0.35rem;
+      background: var(--gb-surface);
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      box-shadow: var(--gb-shadow-soft);
+      list-style: none;
+      margin: 0;
+      display: none;
+    }
+
+    .admin-profile-menu.open {
+      display: block;
+    }
+
+    .admin-profile-menu li {
+      padding: 0.4rem 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      color: var(--gb-text-main);
+      cursor: pointer;
+      transition: background-color 0.12s ease;
+    }
+
+    .admin-profile-menu li span.icon {
+      font-size: 0.85rem;
+      color: var(--gb-text-muted);
+    }
+
+    .admin-profile-menu li:hover {
+      background: rgba(15, 23, 42, 0.04);
+    }
+
+    .admin-profile-menu li.logout {
+      color: var(--gb-danger);
+    }
+
+    /* MAIN LAYOUT */
+    .admin-main {
+      flex: 1;
+      padding-top: 72px; /* navbar height offset */
+      padding-bottom: 32px;
+    }
+
+    .admin-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 0;
+    }
+
+    .dashboard-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-kicker {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--gb-primary-dark);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .dashboard-kicker-pill {
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      background: var(--gb-primary-soft);
+      color: var(--gb-primary-dark);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .dashboard-title {
+      font-size: clamp(1.6rem, 2.1vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .dashboard-title span.highlight {
+      color: var(--gb-primary-dark);
+    }
+
+    .dashboard-subtitle {
+      font-size: 0.95rem;
+      color: var(--gb-text-muted);
+      max-width: 540px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-grid-secondary {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 1.25rem;
+    }
+
+    /* CARDS */
+    .gb-card {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+      border-radius: var(--gb-radius-lg);
+      padding: 1.1rem 1.2rem;
+      box-shadow: var(--gb-shadow-subtle);
+      border: 1px solid rgba(226, 232, 240, 0.85);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gb-card::before {
+      content: "";
+      position: absolute;
+      inset-inline-end: -40px;
+      top: -40px;
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(34, 197, 94, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .gb-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .gb-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .gb-card-title span.icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--gb-primary-dark);
+    }
+
+    .gb-card-subtitle {
+      font-size: 0.82rem;
+      color: var(--gb-text-muted);
+    }
+
+    .gb-card-badge {
+      padding: 0.18rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(34, 197, 94, 0.08);
+      color: var(--gb-primary-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    /* FORM */
+    .gb-form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+      gap: 0.9rem 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .gb-form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.85rem;
+    }
+
+    .gb-label {
+      font-weight: 500;
+      color: var(--gb-text-main);
+    }
+
+    .gb-label span.hint {
+      font-weight: 400;
+      color: var(--gb-text-muted);
+      font-size: 0.8rem;
+    }
+
+    .gb-input,
+    .gb-select,
+    .gb-textarea {
+      border-radius: 999px;
+      border: 1px solid var(--gb-border-subtle);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.86rem;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .gb-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 6L8 9.5L11.5 6' stroke='%2394A3B8' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      background-size: 14px;
+      padding-right: 1.9rem;
+    }
+
+    .gb-textarea {
+      border-radius: 14px;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .gb-input:focus,
+    .gb-select:focus,
+    .gb-textarea:focus {
+      border-color: rgba(34, 197, 94, 0.55);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.45);
+      background: #ffffff;
+    }
+
+    .gb-form-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .gb-button-primary {
+      border: none;
+      border-radius: 999px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+      background: radial-gradient(circle at 0% 0%, #6ee7b7, #22c55e);
+      color: #ecfdf5;
+      box-shadow: 0 14px 30px rgba(22, 163, 74, 0.58);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.1s ease;
+    }
+
+    .gb-button-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(22, 163, 74, 0.65);
+      filter: brightness(1.03);
+    }
+
+    .gb-button-primary:active {
+      transform: translateY(0);
+      box-shadow: 0 10px 22px rgba(22, 163, 74, 0.55);
+    }
+
+    .gb-button-secondary-link {
+      border: none;
+      padding: 0;
+      background: none;
+      font-size: 0.82rem;
+      color: var(--gb-text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+    }
+
+    .gb-form-footnote {
+      font-size: 0.78rem;
+      color: var(--gb-text-muted);
+    }
+
+    /* LISTS / ROW CARDS */
+    .gb-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .gb-empty-state {
+      padding: 0.75rem 0.8rem;
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      font-size: 0.8rem;
+      color: var(--gb-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(248, 250, 252, 0.9);
+    }
+
+    .gb-menu-item {
+      padding: 0.65rem 0.8rem;
+      border-radius: 14px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      background: rgba(255, 255, 255, 0.96);
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) auto;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .gb-menu-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .gb-menu-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .gb-menu-meta {
+      font-size: 0.78rem;
+      color: var(--gb-text-muted);
+    }
+
+    .gb-price-tag {
+      justify-self: flex-start;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: rgba(15, 23, 42, 0.04);
+      color: var(--gb-text-main);
+      font-weight: 500;
+    }
+
+    .gb-menu-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      justify-self: flex-end;
+    }
+
+    .gb-icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--gb-text-muted);
+      transition: background-color 0.12s ease, color 0.12s ease, transform 0.1s ease;
+    }
+
+    .gb-icon-btn:hover {
+      background: rgba(15, 23, 42, 0.1);
+      color: var(--gb-text-main);
+      transform: translateY(-1px);
+    }
+
+    .gb-icon-btn.danger:hover {
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--gb-danger);
+    }
+
+    /* BADGES */
+    .gb-badge {
+      border-radius: 999px;
+      padding: 0.16rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .gb-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .gb-badge-success {
+      background: rgba(34, 197, 94, 0.08);
+      color: var(--gb-primary-dark);
+    }
+
+    .gb-badge-warning {
+      background: rgba(250, 204, 21, 0.1);
+      color: #b45309;
+    }
+
+    .gb-badge-info {
+      background: rgba(129, 140, 248, 0.12);
+      color: #4338ca;
+    }
+
+    .gb-badge-danger {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--gb-danger);
+    }
+
+    /* ORDER & COMPLAINT ROWS */
+    .gb-row {
+      padding: 0.7rem 0.8rem;
+      border-radius: 14px;
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      background: rgba(255, 255, 255, 0.97);
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) auto;
+      gap: 0.6rem;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .gb-row-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.12rem;
+    }
+
+    .gb-row-title {
+      font-weight: 600;
+    }
+
+    .gb-row-meta {
+      color: var(--gb-text-muted);
+      font-size: 0.78rem;
+    }
+
+    .gb-row-secondary {
+      font-size: 0.8rem;
+      color: var(--gb-text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .gb-row-status {
+      justify-self: flex-end;
+    }
+
+    /* FOOTER */
+    .admin-footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      padding: 0.9rem 1.25rem;
+      font-size: 0.8rem;
+      color: var(--gb-text-muted);
+    }
+
+    .admin-footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-footer-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-footer-links a {
+      color: var(--gb-text-muted);
+      text-decoration: none;
+    }
+
+    .admin-footer-links a:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .dashboard-grid,
+      .dashboard-grid-secondary {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .gb-card {
+        border-radius: 16px;
+      }
+
+      .gb-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .gb-form-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .gb-row,
+      .gb-menu-item {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .gb-row-status,
+      .gb-menu-actions {
+        justify-self: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .admin-navbar-inner {
+        padding-inline: 1rem;
+      }
+
+      .admin-nav-actions {
+        gap: 0.4rem;
+      }
+
+      .admin-nav-btn span.text-label {
+        display: none;
+      }
+
+      .admin-nav-btn {
+        padding-inline: 0.7rem;
+      }
+
+      .dashboard-header {
+        margin-top: 0.25rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .admin-navbar-inner {
+        padding-inline: 0.8rem;
+      }
+
+      .admin-brand span.text {
+        display: none;
+      }
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body class="admin-body">
   <!-- NAVBAR -->
-  <nav class="navbar navbar-dark bg-dark sticky-top shadow">
-    <div class="container">
-      <span class="navbar-brand mb-0 h1 fs-3 fw-bold">Green Bites Admin</span>
+  <nav class="admin-navbar">
+    <div class="admin-navbar-inner">
+      <div class="admin-brand">
+        <span class="admin-brand-icon">
+          <i class="bi bi-leaf"></i>
+        </span>
+        <span class="text">GreenBites Admin</span>
+      </div>
+
+      <div class="admin-nav-actions">
+        <button class="admin-nav-btn" type="button" data-scroll-target="#section-complaints">
+          <i class="bi bi-chat-dots"></i>
+          <span class="text-label">Complaints</span>
+          <span class="badge-dot"></span>
+        </button>
+        <button class="admin-nav-btn admin-nav-btn-primary" type="button" data-scroll-target="#section-orders">
+          <i class="bi bi-receipt-cutoff"></i>
+          <span class="text-label">Orders</span>
+        </button>
+        <div class="admin-profile" id="adminProfileToggle" aria-haspopup="true" aria-expanded="false">
+          <div class="admin-profile-avatar">
+            <span>AD</span>
+          </div>
+          <div>
+            <div class="admin-profile-name">Admin</div>
+            <div class="admin-profile-role">Smart Canteen</div>
+          </div>
+          <span class="admin-profile-chevron">
+            <i class="bi bi-chevron-down"></i>
+          </span>
+          <ul class="admin-profile-menu" id="adminProfileMenu">
+            <li>
+              <span class="icon"><i class="bi bi-person-circle"></i></span>
+              <span>View profile</span>
+            </li>
+            <li>
+              <span class="icon"><i class="bi bi-gear"></i></span>
+              <span>Settings</span>
+            </li>
+            <li class="logout">
+              <span class="icon"><i class="bi bi-box-arrow-right"></i></span>
+              <span>Logout</span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </nav>
 
-  <!-- DASHBOARD GRID -->
-  <div class="container-fluid py-3">
-    <div class="row g-3">
-      <!-- MENU MANAGEMENT -->
-      <div class="col-lg-4">
-        <h4 class="mb-3 text-success">Menu</h4>
-        <form id="menuForm" class="card p-3 mb-3 shadow-sm">
-          <input type="hidden" id="menuId">
-          <div class="mb-2">
-            <label class="form-label">Item name</label>
-            <input type="text" class="form-control" id="menuName" required>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Price</label>
-            <input type="number" class="form-control" id="menuPrice" required>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Description</label>
-            <textarea class="form-control" id="menuDesc" rows="2"></textarea>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Image URL (manual for now)</label>
-            <input type="text" class="form-control" id="menuImgUrl" placeholder="images/biriyani.jpg">
-            <!-- Future: file upload -->
-          </div>
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="menuSpecial">
-            <label class="form-check-label" for="menuSpecial">Today special</label>
-          </div>
-          <button class="btn btn-success" type="submit">Save</button>
-          <button class="btn btn-secondary btn-sm ms-2" type="button" id="menuReset">Reset</button>
-        </form>
-        <ul id="menuList" class="list-group small mb-3"></ul>
-      </div>
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+    <div class="admin-container">
+      <header class="dashboard-header">
+        <div class="dashboard-kicker">
+          <span class="dashboard-kicker-pill">Overview</span>
+          Admin dashboard
+        </div>
+        <h1 class="dashboard-title">
+          Manage
+          <span class="highlight">GreenBites</span>
+          in one place.
+        </h1>
+        <p class="dashboard-subtitle">
+          Add new food items, adjust pricing and categories, track orders, and respond to canteen feedback from a single, clean dashboard.
+        </p>
+      </header>
 
-      <!-- ORDER MANAGEMENT -->
-      <div class="col-lg-4">
-        <h4 class="mb-3 text-info">Orders</h4>
-        <div id="adminOrders" class="list-group small mb-3"></div>
-      </div>
+      <!-- Menu management & existing items -->
+      <section class="dashboard-grid" aria-label="Menu management">
+        <!-- ADD NEW FOOD ITEM -->
+        <section class="gb-card" id="section-add-food">
+          <div class="gb-card-header">
+            <div>
+              <div class="gb-card-title">
+                <span class="icon">
+                  <i class="bi bi-plus-circle"></i>
+                </span>
+                Add new food item
+              </div>
+              <p class="gb-card-subtitle">
+                Create or update items on the GreenBites menu with pricing, category and imagery.
+              </p>
+            </div>
+            <span class="gb-card-badge">Menu</span>
+          </div>
 
-      <!-- TABLES + COMPLAINTS -->
-      <div class="col-lg-4">
-        <h4 class="mb-3 text-success">Tables</h4>
-        <div id="adminTables" class="row row-cols-2 g-2 mb-4"></div>
+          <form id="menuForm" autocomplete="off">
+            <input type="hidden" id="menuId">
+            <div class="gb-form-grid">
+              <div class="gb-form-field">
+                <label for="menuName" class="gb-label">Food title</label>
+                <input type="text" id="menuName" class="gb-input" placeholder="e.g. Veggie Power Bowl" required>
+              </div>
 
-        <h4 class="mb-3 text-danger">Complaints</h4>
-        <div id="adminComplaints" class="list-group small mb-3"></div>
-      </div>
+              <div class="gb-form-field">
+                <label for="menuPrice" class="gb-label">Price</label>
+                <input type="number" id="menuPrice" class="gb-input" min="0" step="0.5" placeholder="e.g. 120" required>
+              </div>
+
+              <div class="gb-form-field">
+                <label for="menuCategory" class="gb-label">Category</label>
+                <select id="menuCategory" class="gb-select" required>
+                  <option value="">Select category</option>
+                  <option value="Breakfast">Breakfast</option>
+                  <option value="Lunch">Lunch</option>
+                  <option value="Snacks">Snacks</option>
+                  <option value="Beverages">Beverages</option>
+                  <option value="Desserts">Desserts</option>
+                </select>
+              </div>
+
+              <div class="gb-form-field">
+                <label for="menuImgUrl" class="gb-label">
+                  Image URL
+                  <span class="hint">(optional)</span>
+                </label>
+                <input type="text" id="menuImgUrl" class="gb-input" placeholder="e.g. /images/veggie-bowl.jpg">
+              </div>
+
+              <div class="gb-form-field" style="grid-column: 1 / -1;">
+                <label for="menuDesc" class="gb-label">
+                  Description
+                  <span class="hint">(optional)</span>
+                </label>
+                <textarea id="menuDesc" class="gb-textarea" rows="3" placeholder="Short, friendly description that students will love..."></textarea>
+              </div>
+            </div>
+
+            <div class="gb-form-footer">
+              <div>
+                <button type="submit" class="gb-button-primary">
+                  <i class="bi bi-check2-circle"></i>
+                  <span>Add food</span>
+                </button>
+                <button type="button" id="menuReset" class="gb-button-secondary-link">
+                  Clear form
+                </button>
+              </div>
+              <p class="gb-form-footnote">
+                Changes will be available instantly across the GreenBites ordering experience.
+              </p>
+            </div>
+          </form>
+        </section>
+
+        <!-- EXISTING MENU ITEMS -->
+        <section class="gb-card" id="section-menu-items" aria-label="Existing menu items">
+          <div class="gb-card-header">
+            <div>
+              <div class="gb-card-title">
+                <span class="icon">
+                  <i class="bi bi-layout-text-sidebar-reverse"></i>
+                </span>
+                Existing menu items
+              </div>
+              <p class="gb-card-subtitle">
+                Quickly skim, edit or remove items from your live canteen menu.
+              </p>
+            </div>
+          </div>
+
+          <div id="menuList" class="gb-list" aria-live="polite">
+            <!-- Dummy sample rows for now; you can replace with real data later -->
+            <article class="gb-menu-item">
+              <div class="gb-menu-main">
+                <h3 class="gb-menu-title">Classic Idli &amp; Sambar</h3>
+                <p class="gb-menu-meta">Breakfast • Light &amp; wholesome</p>
+              </div>
+              <div class="gb-price-tag">₹35</div>
+              <div class="gb-menu-actions">
+                <button type="button" class="gb-icon-btn" aria-label="Edit Classic Idli &amp; Sambar">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="gb-icon-btn danger" aria-label="Delete Classic Idli &amp; Sambar">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </article>
+
+            <article class="gb-menu-item">
+              <div class="gb-menu-main">
+                <h3 class="gb-menu-title">GreenBites Protein Bowl</h3>
+                <p class="gb-menu-meta">Lunch • High protein • Student favourite</p>
+              </div>
+              <div class="gb-price-tag">₹120</div>
+              <div class="gb-menu-actions">
+                <button type="button" class="gb-icon-btn" aria-label="Edit GreenBites Protein Bowl">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="gb-icon-btn danger" aria-label="Delete GreenBites Protein Bowl">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </article>
+
+            <article class="gb-menu-item">
+              <div class="gb-menu-main">
+                <h3 class="gb-menu-title">Cold Brew with Oat Milk</h3>
+                <p class="gb-menu-meta">Beverages • Caffeinated • Low sugar</p>
+              </div>
+              <div class="gb-price-tag">₹80</div>
+              <div class="gb-menu-actions">
+                <button type="button" class="gb-icon-btn" aria-label="Edit Cold Brew with Oat Milk">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="gb-icon-btn danger" aria-label="Delete Cold Brew with Oat Milk">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <!-- Orders & complaints -->
+      <section class="dashboard-grid-secondary" aria-label="Orders and complaints">
+        <!-- ORDERS SECTION -->
+        <section class="gb-card" id="section-orders">
+          <div class="gb-card-header">
+            <div>
+              <div class="gb-card-title">
+                <span class="icon">
+                  <i class="bi bi-receipt"></i>
+                </span>
+                Recent orders
+              </div>
+              <p class="gb-card-subtitle">
+                Keep track of real-time activity and fulfil orders efficiently.
+              </p>
+            </div>
+            <span class="gb-card-badge">Orders</span>
+          </div>
+
+          <div id="adminOrders" class="gb-list" aria-live="polite">
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">#ORD-1024</h3>
+                <p class="gb-row-meta">Ananya Sharma • 3 items • 12:05 PM</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>Total: ₹245</span>
+                <span>Pickup: Counter 2</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-warning">
+                  <span class="gb-badge-dot"></span>
+                  Pending
+                </span>
+              </div>
+            </article>
+
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">#ORD-1023</h3>
+                <p class="gb-row-meta">Rahul Verma • 1 item • 11:50 AM</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>Total: ₹80</span>
+                <span>Pickup: Counter 1</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-success">
+                  <span class="gb-badge-dot"></span>
+                  Completed
+                </span>
+              </div>
+            </article>
+
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">#ORD-1022</h3>
+                <p class="gb-row-meta">Canteen Walk-in • 2 items • 11:32 AM</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>Total: ₹150</span>
+                <span>POS: GreenBites Counter</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-info">
+                  <span class="gb-badge-dot"></span>
+                  In queue
+                </span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- COMPLAINTS SECTION -->
+        <section class="gb-card" id="section-complaints">
+          <div class="gb-card-header">
+            <div>
+              <div class="gb-card-title">
+                <span class="icon">
+                  <i class="bi bi-emoji-frown"></i>
+                </span>
+                Complaints &amp; feedback
+              </div>
+              <p class="gb-card-subtitle">
+                Listen to students, resolve issues quickly and improve satisfaction.
+              </p>
+            </div>
+            <span class="gb-card-badge">Complaints</span>
+          </div>
+
+          <div id="adminComplaints" class="gb-list" aria-live="polite">
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">Portion size felt small</h3>
+                <p class="gb-row-meta">Rohit Kumar • 15 Dec 2025 • Veg Thali</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>“The food was tasty but quantity was less compared to price.”</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-danger">
+                  <span class="gb-badge-dot"></span>
+                  New
+                </span>
+              </div>
+            </article>
+
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">Need more vegan options</h3>
+                <p class="gb-row-meta">Priya Singh • 14 Dec 2025</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>“Would love to see at least one vegan dish in every meal slot.”</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-info">
+                  <span class="gb-badge-dot"></span>
+                  In review
+                </span>
+              </div>
+            </article>
+
+            <article class="gb-row">
+              <div class="gb-row-main">
+                <h3 class="gb-row-title">Order delay resolved</h3>
+                <p class="gb-row-meta">System auto-ticket • 13 Dec 2025</p>
+              </div>
+              <div class="gb-row-secondary">
+                <span>“Order prepared late due to power cut - notified students via app.”</span>
+              </div>
+              <div class="gb-row-status">
+                <span class="gb-badge gb-badge-success">
+                  <span class="gb-badge-dot"></span>
+                  Resolved
+                </span>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <!-- Footer (optionally add) -->
-  <footer class="bg-dark text-light py-3 mt-4">
-    <div class="container text-center">
-      &copy; 2024 Green Bites Admin Dashboard
+  <!-- FOOTER -->
+  <footer class="admin-footer">
+    <div class="admin-footer-inner">
+      <span>&copy; 2025 GreenBites · Smart Canteen Management System</span>
+      <div class="admin-footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Contact</a>
+      </div>
     </div>
   </footer>
 
+  <!-- Optional JS (Bootstrap bundle for icons & any existing components) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Admin specific behaviour hooks (optional; keep for integration) -->
   <script type="module" src="js/admin.js"></script>
+
+  <!-- Lightweight interactivity for nav + profile dropdown -->
+  <script>
+    (function () {
+      const navButtons = document.querySelectorAll("[data-scroll-target]");
+      navButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const target = btn.getAttribute("data-scroll-target");
+          const el = document.querySelector(target);
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          const offset = 80;
+          const top = window.scrollY + rect.top - offset;
+          window.scrollTo({ top, behavior: "smooth" });
+        });
+      });
+
+      const profileToggle = document.getElementById("adminProfileToggle");
+      const profileMenu = document.getElementById("adminProfileMenu");
+
+      if (profileToggle && profileMenu) {
+        profileToggle.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const isOpen = profileMenu.classList.toggle("open");
+          profileToggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        document.addEventListener("click", (event) => {
+          if (!profileMenu.classList.contains("open")) return;
+          if (!profileToggle.contains(event.target)) {
+            profileMenu.classList.remove("open");
+            profileToggle.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
