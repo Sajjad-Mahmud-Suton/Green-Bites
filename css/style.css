@@ -38,6 +38,56 @@
     box-shadow: 0 8px 24px rgba(0,60,60,0.13);
     transition: background 0.25s;
   }
+
+  /* Dropdown Menu Custom Styles */
+  .dropdown-menu-custom {
+    background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(25, 135, 84, 0.2);
+    padding: 10px 0;
+    margin-top: 10px;
+    min-width: 180px;
+  }
+  .dropdown-menu-custom .dropdown-item {
+    color: #2d3748;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    border-radius: 8px;
+    margin: 2px 8px;
+  }
+  .dropdown-menu-custom .dropdown-item:hover,
+  .dropdown-menu-custom .dropdown-item:focus {
+    background: linear-gradient(90deg, #198754, #1f9ebd);
+    color: #fff;
+    transform: translateX(5px);
+  }
+  .dropdown-menu-custom .dropdown-item.active {
+    background: linear-gradient(90deg, #198754, #1f9ebd);
+    color: #fff;
+  }
+  .dropdown-menu-custom .dropdown-item i {
+    font-size: 1.1em;
+  }
+  .nav-item.dropdown:hover .dropdown-menu {
+    display: block;
+  }
+
+  /* Menu Page Header Styles */
+  .menu-page-header {
+    padding-top: 100px;
+  }
+  .menu-page-title {
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2d3748;
+    letter-spacing: 1px;
+  }
+  .menu-page-title i {
+    color: #198754;
+  }
  
   
   
