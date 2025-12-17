@@ -150,9 +150,9 @@ const complaintImage = document.getElementById("complaintImage");
 const complaintMsg = document.getElementById("complaintMsg");
 
 if (complaintForm) {
-  complaintForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    complaintMsg.textContent = "";
+complaintForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  complaintMsg.textContent = "";
     complaintMsg.className = "text-success ms-2";
 
     // Validate required fields
@@ -197,12 +197,12 @@ if (complaintForm) {
         complaintMsg.textContent = result.message || "Error submitting complaint.";
         complaintMsg.className = "text-danger ms-2";
       }
-    } catch (err) {
-      console.error(err);
+  } catch (err) {
+    console.error(err);
       complaintMsg.textContent = "Error submitting complaint. Please try again.";
       complaintMsg.className = "text-danger ms-2";
-    }
-  });
+  }
+});
 }
 // Daily specials slider fill code
 const specialsSliderInner = document.getElementById("specialsSliderInner");
