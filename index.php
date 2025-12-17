@@ -53,139 +53,41 @@
       </div>
       <!-- FOOD CARDS -->
       <div id="dealsSection" class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4 mb-4">
-        <!-- Card Example—add more as needed -->
-        <div class="col">
-          <div class="card shadow menu-card border-success h-100">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e6/Panta_Ilish.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-            <div class="card-body">
-              <div class="card-title-price">
-                <h5 class="card-title">Steamed Rice</h5>
-                <span class="badge bg-success price-badge">৳50</span>
-              </div>
-              <button class="btn btn-success w-100 order-btn">Order</button>
-            </div>
-          </div>
-          
-        </div>
-        <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://www.allrecipes.com/thmb/249U3lsxHXdSPJdrTITzK_saOjE=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/6067251-bengali-chicken-curry-with-potatoes-Linda-Chor-4x3-1-94006a09cdec49ceaa26c1044f50359a.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Chicken Curry</h5>
-                  <span class="badge bg-success price-badge">৳150</span>
+        <?php
+        // Include database connection
+        include 'db.php';
+        
+        // Fetch all food items from every category (no category filter)
+        $sql = "SELECT * FROM menu_items WHERE is_available = 1 ORDER BY title";
+        $result = mysqli_query($conn, $sql);
+        
+        if ($result && mysqli_num_rows($result) > 0) {
+          while ($row = mysqli_fetch_assoc($result)) {
+            $title = htmlspecialchars($row['title']);
+            $price = number_format($row['price'], 0);
+            $image = htmlspecialchars($row['image_url']);
+            $description = htmlspecialchars($row['description'] ?? '');
+            ?>
+            <div class="col">
+              <div class="card shadow menu-card border-success h-100">
+                <img src="<?php echo $image; ?>" class="card-img-top" style="height:140px;object-fit:cover;" alt="<?php echo $title; ?>">
+                <div class="card-body">
+                  <div class="card-title-price">
+                    <h5 class="card-title"><?php echo $title; ?></h5>
+                    <span class="badge bg-success price-badge">৳<?php echo $price; ?></span>
+                  </div>
+                  <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>">Order</button>
                 </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
               </div>
             </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://www.bongcravings.com/wp-content/uploads/2017/01/IMG_3555.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Mutton Korma</h5>
-                  <span class="badge bg-success price-badge">৳250</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://cookishcreation.com/wp-content/uploads/2021/05/Beef-Tehari-Cookish-Creation.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Beef Tehari</h5>
-                  <span class="badge bg-success price-badge">৳200</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://www.licious.in/blog/wp-content/uploads/2022/08/shutterstock_1810759399.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Hilsa Fish Curry</h5>
-                  <span class="badge bg-success price-badge">৳300</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://png.pngtree.com/png-clipart/20240830/original/pngtree-a-delicious-chicken-biryani-png-image_15893631.png" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Chicken Biryani</h5>
-                  <span class="badge bg-success price-badge">৳200</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://i0.wp.com/veganbangla.com/wp-content/uploads/2020/05/fullsizeoutput_79b.jpeg?fit=1200%2C794&ssl=1" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Lentil Dal</h5>
-                  <span class="badge bg-success price-badge">৳80</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://i0.wp.com/www.spiceandcolour.com/wp-content/uploads/2020/06/sabji-1.jpg?fit=1140%2C760&ssl=1" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Vegetable Curry</h5>
-                  <span class="badge bg-success price-badge">৳100</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://www.chainbaker.com/wp-content/uploads/2021/05/IMG_1918.jpg" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Bakarkhani</h5>
-                  <span class="badge bg-success price-badge">৳50</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-          <div class="col">
-            <div class="card shadow menu-card border-success h-100">
-              <img src="https://i.ytimg.com/vi/D2AgyOh0zJg/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCPbdGrghQeSTTZpm43XmAlRCh4Ag" class="card-img-top" style="height:140px;object-fit:cover;">
-              <div class="card-body">
-                <div class="card-title-price">
-                  <h5 class="card-title">Beef Haleem</h5>
-                  <span class="badge bg-success price-badge">৳150</span>
-                </div>
-                <button class="btn btn-success w-100 order-btn">Order</button>
-              </div>
-            </div>
-            
-          </div>
-
-        <!-- More cards ... -->
+            <?php
+          }
+        } else {
+          echo '<div class="col-12"><div class="alert alert-info text-center">No items available at the moment. Please check back later!</div></div>';
+        }
+        
+        mysqli_close($conn);
+        ?>
       </div>
     </div>
   </section>
