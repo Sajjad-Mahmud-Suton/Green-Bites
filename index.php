@@ -1,3 +1,21 @@
+<?php
+// Start session and get user info at the very top (before any HTML output)
+session_start();
+include 'db.php';
+
+// Try to get user info from session
+$userName = '';
+$userEmail = '';
+if (isset($_SESSION['user_email'])) {
+  $email = $_SESSION['user_email'];
+  $userQuery = mysqli_query($conn, "SELECT name, email FROM users WHERE email='$email' LIMIT 1");
+  if ($userRow = mysqli_fetch_assoc($userQuery)) {
+    $userName = htmlspecialchars($userRow['name']);
+    $userEmail = htmlspecialchars($userRow['email']);
+  }
+}
+// Don't close connection here as it might be needed elsewhere
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -227,24 +245,47 @@
   <section id="complaintsSection" class="mb-5">
     <div class="container">
       <h3 class="mb-3 text-danger">Complaint</h3>
-      <form id="complaintForm" class="card p-3 shadow-sm">
+      <form id="complaintForm" action="submit_complaint.php" method="POST" enctype="multipart/form-data" class="card p-3 shadow-sm">
         <div class="mb-3">
-          <label class="form-label">Order ID (optional)</label>
-          <input type="text" class="form-control" id="complaintOrderId">
+          <label class="form-label">Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="complaintName" name="name" value="<?php echo $userName; ?>" required>
         </div>
         <div class="mb-3">
-          <label class="form-label">Complaint</label>
-          <textarea class="form-control" id="complaintText" rows="3" required></textarea>
+          <label class="form-label">Email <span class="text-danger">*</span></label>
+          <input type="email" class="form-control" id="complaintEmail" name="email" value="<?php echo $userEmail; ?>" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Order ID (optional)</label>
+          <input type="text" class="form-control" id="complaintOrderId" name="order_id">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Complaint Message <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="complaintText" name="message" rows="3" required></textarea>
         </div>
         <div class="mb-3">
           <label class="form-label">Add Image (optional)</label>
-          <input type="file" class="form-control" id="complaintImage" accept="image/*">
+          <input type="file" class="form-control" id="complaintImage" name="image" accept="image/*">
         </div>
         <button type="submit" class="btn btn-danger w-100">Submit</button>
         <small id="complaintMsg" class="text-success ms-2"></small>
       </form>
     </div>
   </section>
+
+  <!-- Success Modal for Complaint Submission -->
+  <div class="modal fade" id="complaintSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="fw-bold mb-3">Submitted Successfully!</h4>
+          <button type="button" class="btn btn-success" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   
 <?php include 'includes/footer.php'; ?>

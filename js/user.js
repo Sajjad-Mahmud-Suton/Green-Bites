@@ -142,44 +142,68 @@ function listenToMyOrders() {
 }
 
 const complaintForm = document.getElementById("complaintForm");
+const complaintName = document.getElementById("complaintName");
+const complaintEmail = document.getElementById("complaintEmail");
 const complaintOrderId = document.getElementById("complaintOrderId");
 const complaintText = document.getElementById("complaintText");
 const complaintImage = document.getElementById("complaintImage");
 const complaintMsg = document.getElementById("complaintMsg");
 
-complaintForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  complaintMsg.textContent = "";
+if (complaintForm) {
+  complaintForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    complaintMsg.textContent = "";
+    complaintMsg.className = "text-success ms-2";
 
-  const text = complaintText.value.trim();
-  if (!text) return;
+    // Validate required fields
+    const name = complaintName ? complaintName.value.trim() : '';
+    const email = complaintEmail ? complaintEmail.value.trim() : '';
+    const message = complaintText ? complaintText.value.trim() : '';
 
-  let imageUrl = "";
-  const file = complaintImage.files[0];
-
-  try {
-    if (file) {
-      const fileRef = ref(storage, `complaints/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
-      imageUrl = await getDownloadURL(fileRef);
+    if (!name || !email || !message) {
+      complaintMsg.textContent = "Please fill in all required fields.";
+      complaintMsg.className = "text-danger ms-2";
+      return;
     }
 
-    await addDoc(collection(db, "complaints"), {
-      userId: currentUserId,
-      orderId: complaintOrderId.value.trim() || null,
-      text,
-      imageUrl,
-      createdAt: serverTimestamp(),
-      status: "new"
-    });
+    // Create FormData for file upload
+    const formData = new FormData(complaintForm);
 
-    complaintForm.reset();
-    complaintMsg.textContent = "Complaint submitted.";
-  } catch (err) {
-    console.error(err);
-    complaintMsg.textContent = "Error submitting complaint.";
-  }
-});
+    try {
+      const response = await fetch('submit_complaint.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear all form fields
+        complaintForm.reset();
+        if (complaintName) complaintName.value = '';
+        if (complaintEmail) complaintEmail.value = '';
+        if (complaintOrderId) complaintOrderId.value = '';
+        if (complaintText) complaintText.value = '';
+        if (complaintImage) complaintImage.value = '';
+
+        // Show success modal
+        const successModal = new bootstrap.Modal(document.getElementById('complaintSuccessModal'));
+        successModal.show();
+
+        // Clear any error messages
+        complaintMsg.textContent = "";
+      } else {
+        // Show error message
+        complaintMsg.textContent = result.message || "Error submitting complaint.";
+        complaintMsg.className = "text-danger ms-2";
+      }
+    } catch (err) {
+      console.error(err);
+      complaintMsg.textContent = "Error submitting complaint. Please try again.";
+      complaintMsg.className = "text-danger ms-2";
+    }
+  });
+}
 // Daily specials slider fill code
 const specialsSliderInner = document.getElementById("specialsSliderInner");
 
