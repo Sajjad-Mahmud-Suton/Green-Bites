@@ -1,9 +1,9 @@
 <?php
-// Start session and database connection at the very top (before any HTML output)
+
 session_start();
 require_once 'db.php';
 
-// Generate CSRF token if not already present
+
 if (empty($_SESSION['csrf_token'])) {
   $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -16,7 +16,7 @@ if (isset($_SESSION['user_id'])) {
   $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
 }
 
-// Don't close connection here as it might be needed elsewhere
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1,9 +1,4 @@
 <?php
-/**
- * Safe script to alter complaints table structure
- * This script checks for existing columns before altering
- * Run this once via browser or command line
- */
 
 include '../db.php';
 

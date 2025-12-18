@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <title>Snacks - Green Bites</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap CSS -->
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
+ 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-light">
 <?php include 'includes/header.php'; ?>
 
-<!-- SNACKS SECTION -->
+
 <section id="snacksSection" class="py-3">
   <div class="container">
     <!-- Page Header -->

@@ -1,5 +1,5 @@
 <?php
-// Reset password page
+
 session_start();
 require_once 'db.php';
 
@@ -8,7 +8,6 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-// Get token from query string (for display and JS)
 $token = isset($_GET['token']) ? trim($_GET['token']) : '';
 ?>
 <!DOCTYPE html>

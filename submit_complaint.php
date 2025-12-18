@@ -1,22 +1,18 @@
 <?php
-/**
- * Complaint Submission Handler
- * Handles complaint form submission with prepared statements
- */
+
 
 session_start();
 include 'db.php';
 
-// Set content type for JSON response
+
 header('Content-Type: application/json');
 
-// Check if form was submitted via POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);
     exit;
 }
 
-// Get and sanitize form data
+// Get form data
 $name = trim($_POST['name'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $message = trim($_POST['message'] ?? '');
