@@ -1,19 +1,21 @@
 <?php
-// Start session and get user info at the very top (before any HTML output)
+// Start session and database connection at the very top (before any HTML output)
 session_start();
-include 'db.php';
+require_once 'db.php';
 
-// Try to get user info from session
-$userName = '';
-$userEmail = '';
-if (isset($_SESSION['user_email'])) {
-  $email = $_SESSION['user_email'];
-  $userQuery = mysqli_query($conn, "SELECT name, email FROM users WHERE email='$email' LIMIT 1");
-  if ($userRow = mysqli_fetch_assoc($userQuery)) {
-    $userName = htmlspecialchars($userRow['name']);
-    $userEmail = htmlspecialchars($userRow['email']);
-  }
+// Generate CSRF token if not already present
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// Get user info from new auth session structure
+$userName  = '';
+$userEmail = '';
+if (isset($_SESSION['user_id'])) {
+  $userName  = htmlspecialchars($_SESSION['full_name'] ?? '');
+  $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
+}
+
 // Don't close connection here as it might be needed elsewhere
 ?>
 <!DOCTYPE html>

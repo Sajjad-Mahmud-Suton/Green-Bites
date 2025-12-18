@@ -73,3 +73,24 @@ INSERT INTO menu_items (title, price, image_url, category_id, description) VALUE
 ('Veggie Burger', 80, 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Veggie_burger.jpg/640px-Veggie_burger.jpg', 4, 'Delicious veggie burger'),
 ('Chicken Nuggets', 90, 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Chicken_Nuggets.jpg/640px-Chicken_Nuggets.jpg', 4, 'Crispy chicken nuggets'),
 ('Spring Roll', 35, 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Springrolls.jpg/640px-Springrolls.jpg', 4, 'Crispy spring roll');
+
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_token (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;SELECT * FROM `users` WHERE 1
