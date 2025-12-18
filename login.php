@@ -159,7 +159,7 @@ $csrf_token = $_SESSION['csrf_token'];
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-envelope text-success"></i>
                         </span>
-                        <input type="email" class="form-control border-start-0" id="email" name="email" placeholder="you@example.com" required>
+                        <input type="email" class="form-control border-start-0" id="email" name="email" placeholder="Enter your email address" required>
                     </div>
                     <div class="form-text">Use the email you registered with Green Bites.</div>
                 </div>

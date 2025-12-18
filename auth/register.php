@@ -101,7 +101,7 @@ try {
     }
 
     // Insert new user
-    $insertSql = "INSERT INTO users (full_name, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, NOW())";
+    $insertSql = "INSERT INTO users (full_name, username, email, password, created_at) VALUES (?, ?, ?, ?, NOW())";
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if (!$insertStmt) {
         respond(false, 'Server error. Please try again later.');

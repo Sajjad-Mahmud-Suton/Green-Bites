@@ -44,7 +44,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 // Lookup user by email using prepared statement
 try {
-    $sql  = "SELECT id, full_name, username, email, password_hash FROM users WHERE email = ? LIMIT 1";
+    $sql  = "SELECT id, full_name, username, email, password FROM users WHERE email = ? LIMIT 1";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         respond(false, 'Server error. Please try again later.');
@@ -57,7 +57,7 @@ try {
     mysqli_stmt_close($stmt);
 
     // Use generic error to avoid revealing if email exists
-    if (!$user || !password_verify($password, $user['password_hash'])) {
+    if (!$user || !password_verify($password, $user['password'])) {
         respond(false, 'Invalid email or password.');
     }
 

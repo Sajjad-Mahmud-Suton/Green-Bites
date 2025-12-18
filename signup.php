@@ -174,7 +174,7 @@ $csrf_token = $_SESSION['csrf_token'];
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-person text-success"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0" id="full_name" name="full_name" placeholder="John Doe" required>
+                        <input type="text" class="form-control border-start-0" id="full_name" name="full_name" placeholder="Enter your name" required>
                     </div>
                 </div>
 
@@ -184,7 +184,7 @@ $csrf_token = $_SESSION['csrf_token'];
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-at text-success"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0" id="username" name="username" placeholder="johndoe" required minlength="3">
+                        <input type="text" class="form-control border-start-0" id="username" name="username" placeholder="Enter your username" required minlength="3">
                     </div>
                     <div id="usernameStatus" class="username-status mt-1"></div>
                 </div>
@@ -195,7 +195,7 @@ $csrf_token = $_SESSION['csrf_token'];
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-envelope text-success"></i>
                         </span>
-                        <input type="email" class="form-control border-start-0" id="email" name="email" placeholder="you@example.com" required>
+                        <input type="email" class="form-control border-start-0" id="email" name="email" placeholder="Enter your email address" required>
                     </div>
                 </div>
 
