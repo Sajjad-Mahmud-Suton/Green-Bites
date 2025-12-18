@@ -272,21 +272,17 @@ if (isset($_SESSION['user_email'])) {
     </div>
   </section>
 
-  <!-- Success Modal for Complaint Submission -->
-  <div class="modal fade" id="complaintSuccessModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body text-center py-4">
-          <div class="mb-3">
-            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
-          </div>
-          <h4 class="fw-bold mb-3">Submitted Successfully!</h4>
-          <button type="button" class="btn btn-success" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
+  <!-- Complaint success popup modal -->
+  <div id="complaintSuccessModal" class="complaint-modal-overlay d-none">
+    <div class="complaint-modal-box">
+      <div class="complaint-modal-icon">✓</div>
+      <div class="complaint-modal-title">Submitted Successfully!</div>
+      <button type="button" id="complaintModalClose" class="btn btn-success complaint-modal-close-btn">
+        Close
+      </button>
     </div>
   </div>
-
+ 
   
 <?php include 'includes/footer.php'; ?>
 </body>

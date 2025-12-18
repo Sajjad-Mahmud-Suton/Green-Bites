@@ -91,7 +91,9 @@ mysqli_stmt_bind_param($stmt, "ssss", $name, $email, $message, $imagePath);
 
 // Execute statement
 if (mysqli_stmt_execute($stmt)) {
-    echo json_encode(['success' => true]);
+    echo json_encode([
+        'success' => true
+    ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Failed to submit complaint: ' . mysqli_error($conn)]);
 }

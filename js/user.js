@@ -148,21 +148,27 @@ const complaintOrderId = document.getElementById("complaintOrderId");
 const complaintText = document.getElementById("complaintText");
 const complaintImage = document.getElementById("complaintImage");
 const complaintMsg = document.getElementById("complaintMsg");
+const complaintSuccessModal = document.getElementById("complaintSuccessModal");
+const complaintModalClose = document.getElementById("complaintModalClose");
 
 if (complaintForm) {
-complaintForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  complaintMsg.textContent = "";
-    complaintMsg.className = "text-success ms-2";
+  complaintForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (complaintMsg) {
+      complaintMsg.textContent = "";
+      complaintMsg.className = "text-success ms-2";
+    }
 
     // Validate required fields
-    const name = complaintName ? complaintName.value.trim() : '';
-    const email = complaintEmail ? complaintEmail.value.trim() : '';
-    const message = complaintText ? complaintText.value.trim() : '';
+    const name = complaintName ? complaintName.value.trim() : "";
+    const email = complaintEmail ? complaintEmail.value.trim() : "";
+    const message = complaintText ? complaintText.value.trim() : "";
 
     if (!name || !email || !message) {
-      complaintMsg.textContent = "Please fill in all required fields.";
-      complaintMsg.className = "text-danger ms-2";
+      if (complaintMsg) {
+        complaintMsg.textContent = "Please fill in all required fields.";
+        complaintMsg.className = "text-danger ms-2";
+      }
       return;
     }
 
@@ -170,39 +176,42 @@ complaintForm.addEventListener("submit", async (e) => {
     const formData = new FormData(complaintForm);
 
     try {
-      const response = await fetch('submit_complaint.php', {
-        method: 'POST',
+      const response = await fetch("submit_complaint.php", {
+        method: "POST",
         body: formData
       });
 
       const result = await response.json();
 
       if (result.success) {
-        // Clear all form fields
         complaintForm.reset();
-        if (complaintName) complaintName.value = '';
-        if (complaintEmail) complaintEmail.value = '';
-        if (complaintOrderId) complaintOrderId.value = '';
-        if (complaintText) complaintText.value = '';
-        if (complaintImage) complaintImage.value = '';
-
-        // Show success modal
-        const successModal = new bootstrap.Modal(document.getElementById('complaintSuccessModal'));
-        successModal.show();
-
-        // Clear any error messages
-        complaintMsg.textContent = "";
+        if (complaintMsg) {
+          complaintMsg.textContent = "";
+        }
+        if (complaintSuccessModal) {
+          complaintSuccessModal.classList.remove("d-none");
+        }
       } else {
-        // Show error message
-        complaintMsg.textContent = result.message || "Error submitting complaint.";
+        if (complaintMsg) {
+          complaintMsg.textContent = result.message || "Error submitting complaint.";
+          complaintMsg.className = "text-danger ms-2";
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      if (complaintMsg) {
+        complaintMsg.textContent = "Error submitting complaint. Please try again.";
         complaintMsg.className = "text-danger ms-2";
       }
-  } catch (err) {
-    console.error(err);
-      complaintMsg.textContent = "Error submitting complaint. Please try again.";
-      complaintMsg.className = "text-danger ms-2";
-  }
-});
+    }
+  });
+}
+
+// Complaint success modal close handler
+if (complaintModalClose && complaintSuccessModal) {
+  complaintModalClose.addEventListener("click", () => {
+    complaintSuccessModal.classList.add("d-none");
+  });
 }
 // Daily specials slider fill code
 const specialsSliderInner = document.getElementById("specialsSliderInner");
