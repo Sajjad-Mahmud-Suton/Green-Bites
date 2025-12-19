@@ -83,12 +83,11 @@ if (isset($conn)) {
 
         authNavItem.classList.add('dropdown');
         authNavItem.innerHTML = `
-          <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
+          <a class="nav-link dropdown-toggle text-white user-dropdown-toggle" href="#" id="userDropdown" role="button">
             <i class="bi bi-person-circle me-1"></i>
             <span class="d-none d-md-inline">Welcome, ${fullName}</span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
+          <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" id="userDropdownMenu" aria-labelledby="userDropdown">
             <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-lines-fill me-2"></i>View Profile</a></li>
             <li><a class="dropdown-item" href="my_orders.php"><i class="bi bi-bag-check me-2"></i>My Orders</a></li>
             <li><a class="dropdown-item" href="#" id="cartMenuBtn"><i class="bi bi-cart3 me-2"></i>Cart <span class="badge bg-success ms-1" id="cartBadge">0</span></a></li>
@@ -131,12 +130,50 @@ if (isset($conn)) {
         
         // Fix: Make user dropdown stable on click
         const userDropdownEl = document.getElementById('userDropdown');
-        if (userDropdownEl) {
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        if (userDropdownEl && userDropdownMenu) {
+          let userDropdownOpen = false;
+          
           userDropdownEl.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const dropdown = bootstrap.Dropdown.getOrCreateInstance(this);
-            dropdown.toggle();
+            
+            // Close other dropdowns first
+            document.querySelectorAll('.nav-item.dropdown.show').forEach(function(d) {
+              if (d !== authNavItem) {
+                d.classList.remove('show');
+                const menu = d.querySelector('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+              }
+            });
+            
+            // Toggle user dropdown
+            userDropdownOpen = !userDropdownOpen;
+            if (userDropdownOpen) {
+              authNavItem.classList.add('show');
+              userDropdownMenu.classList.add('show');
+            } else {
+              authNavItem.classList.remove('show');
+              userDropdownMenu.classList.remove('show');
+            }
+          });
+          
+          // Prevent dropdown from closing when clicking inside
+          userDropdownMenu.addEventListener('click', function(e) {
+            // Allow clicks on links to work normally
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+              return;
+            }
+            e.stopPropagation();
+          });
+          
+          // Close when clicking outside
+          document.addEventListener('click', function(e) {
+            if (!authNavItem.contains(e.target)) {
+              userDropdownOpen = false;
+              authNavItem.classList.remove('show');
+              userDropdownMenu.classList.remove('show');
+            }
           });
         }
       })

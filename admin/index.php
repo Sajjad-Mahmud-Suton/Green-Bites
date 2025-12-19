@@ -1201,5 +1201,75 @@ function showAddCategoryModal() {
   new bootstrap.Modal(document.getElementById('categoryModal')).show();
 }
 </script>
+
+<!-- Admin Footer -->
+<footer class="admin-footer">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-md-6 text-center text-md-start">
+        <span class="text-muted">
+          <i class="bi bi-shield-lock me-1"></i>
+          Green Bites Admin Panel &copy; <?php echo date('Y'); ?>
+        </span>
+      </div>
+      <div class="col-md-6 text-center text-md-end">
+        <span class="text-muted small">
+          <i class="bi bi-person-badge me-1"></i>Logged in as: <strong><?php echo htmlspecialchars($admin_name); ?></strong>
+          <span class="mx-2">|</span>
+          <i class="bi bi-clock me-1"></i><span id="liveDateTime"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+.admin-footer {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #a0aec0;
+  padding: 8px 20px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  position: fixed;
+  bottom: 0;
+  left: 250px;
+  right: 0;
+  z-index: 100;
+  font-size: 0.8rem;
+}
+.admin-footer .text-muted {
+  color: #a0aec0 !important;
+}
+@media (max-width: 991px) {
+  .admin-footer {
+    left: 0;
+  }
+}
+/* Add padding to main content to prevent footer overlap */
+main {
+  padding-bottom: 50px !important;
+}
+</style>
+
+<script>
+// Live Date Time in Footer
+function updateDateTime() {
+  const now = new Date();
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  };
+  const formatted = now.toLocaleDateString('en-US', options);
+  document.getElementById('liveDateTime').textContent = formatted;
+}
+updateDateTime();
+setInterval(updateDateTime, 1000);
+</script>
 </body>
 </html>

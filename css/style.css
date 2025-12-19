@@ -121,9 +121,10 @@
     font-size: 1.1em;
   }
   
-  /* Show dropdown on hover for desktop */
+  /* Show dropdown on hover for desktop - all dropdowns including user account */
   @media (min-width: 992px) {
-    .nav-item.dropdown:hover > .dropdown-menu {
+    .nav-item.dropdown:hover > .dropdown-menu,
+    #authNavItem.dropdown:hover > .dropdown-menu {
       display: block;
       margin-top: 0;
     }
@@ -134,6 +135,14 @@
   
   /* Keep dropdown open when clicked */
   .nav-item.dropdown.show > .dropdown-menu {
+    display: block !important;
+  }
+  
+  /* User account dropdown specific styles */
+  #authNavItem.dropdown .dropdown-menu {
+    min-width: 200px;
+  }
+  #authNavItem.dropdown.show .dropdown-menu {
     display: block !important;
   }
 
