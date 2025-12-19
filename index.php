@@ -112,131 +112,239 @@ if (isset($_SESSION['user_id'])) {
     </div>
   </section>
 
-  <!-- ABOUT US SECTION -->
-  <section id="aboutusSection" class="about-section py-5">
+  <!-- ABOUT US SECTION - Modern Design -->
+  <section id="aboutusSection" class="about-section-modern py-5">
     <div class="container">
+      <!-- Section Header -->
       <div class="text-center mb-5">
-        <h2 class="about-heading">About <span class="highlight-text">Green Bites</span></h2>
-        <div class="heading-underline mx-auto"></div>
+        <span class="section-badge">🌿 Who We Are</span>
+        <h2 class="section-title-modern">About <span class="gradient-text">Green Bites</span></h2>
+        <p class="section-subtitle">Revolutionizing campus dining experience with technology and taste</p>
       </div>
       
       <div class="row align-items-center g-5">
+        <!-- Left Content -->
         <div class="col-lg-6">
-          <div class="about-content">
-            <p class="lead">
-              <span class="highlight-word">Green Bites</span> is a <span class="highlight-word">modern canteen management system</span> 
-              designed specifically for university students and teachers. We believe that great food 
-              fuels great minds!
+          <div class="about-content-modern">
+            <div class="about-badge-row mb-4">
+              <span class="mini-badge"><i class="bi bi-patch-check-fill"></i> Trusted by 500+ Students</span>
+              <span class="mini-badge"><i class="bi bi-star-fill"></i> 4.9 Rating</span>
+            </div>
+            
+            <h3 class="about-subtitle">Your Campus Food Companion! 🍽️</h3>
+            
+            <p class="about-text">
+              <strong>Green Bites</strong> is not just a canteen—it's a <span class="highlight-tag">digital dining revolution</span> designed specifically for university students and teachers. We believe that <span class="highlight-tag">great food fuels great minds!</span>
             </p>
-            <p>
-              We created Green Bites to <span class="highlight-word">revolutionize</span> the campus dining experience. 
-              No more long queues, no more confusion—just <span class="highlight-word">quick ordering</span>, 
-              <span class="highlight-word">easy payments</span>, and delicious food delivered to your table. 
-              Our platform helps reduce food waste and makes the entire canteen experience smoother for everyone.
+            
+            <p class="about-text">
+              Say goodbye to long queues and confusion. With Green Bites, experience <span class="highlight-tag">instant ordering</span>, real-time menu updates, and delicious Bangladeshi flavors—all at your fingertips.
             </p>
-            <p>
-              At Green Bites, we're committed to <span class="highlight-word">freshness</span>, 
-              <span class="highlight-word">hygiene</span>, and authentic <span class="highlight-word">Bangladeshi flavors</span>. 
-              Combined with our user-friendly technology, we're bringing a new era of campus dining 
-              right to your fingertips.
-            </p>
+            
+            <div class="about-stats-row">
+              <div class="stat-item">
+                <div class="stat-number">32+</div>
+                <div class="stat-label">Menu Items</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Happy Users</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">99%</div>
+                <div class="stat-label">Satisfaction</div>
+              </div>
+            </div>
+            
+            <a href="#teamSection" class="btn btn-gradient-modern mt-4">
+              <i class="bi bi-people-fill me-2"></i>Meet Our Team
+            </a>
           </div>
         </div>
+        
+        <!-- Right Features Grid -->
         <div class="col-lg-6">
-          <div class="features-grid">
-            <div class="feature-card">
-              <div class="feature-icon">🚀</div>
-              <h5>Instant Ordering</h5>
-              <p>Order food in seconds with our simple interface</p>
+          <div class="features-grid-modern">
+            <div class="feature-card-modern" data-aos="fade-up">
+              <div class="feature-icon-modern">
+                <i class="bi bi-lightning-charge-fill"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Lightning Fast Orders</h5>
+                <p>Order your favorite food in under 30 seconds with our intuitive interface</p>
+              </div>
+              <div class="feature-glow"></div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">📋</div>
-              <h5>Live Menu Updates</h5>
-              <p>Real-time menu with availability status</p>
+            
+            <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="100">
+              <div class="feature-icon-modern purple">
+                <i class="bi bi-clock-history"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Real-Time Tracking</h5>
+                <p>Track your order status live from kitchen to your table</p>
+              </div>
+              <div class="feature-glow purple"></div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">🔒</div>
-              <h5>Secure Payments</h5>
-              <p>Multiple payment options including bKash & cards</p>
+            
+            <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="200">
+              <div class="feature-icon-modern orange">
+                <i class="bi bi-shield-lock-fill"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Secure Payments</h5>
+                <p>Multiple payment options - bKash, Nagad, Cards & Cash</p>
+              </div>
+              <div class="feature-glow orange"></div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">💰</div>
-              <h5>Student-Friendly Pricing</h5>
-              <p>Affordable meals for every budget</p>
+            
+            <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="300">
+              <div class="feature-icon-modern cyan">
+                <i class="bi bi-piggy-bank-fill"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Budget Friendly</h5>
+                <p>Student-friendly prices without compromising quality</p>
+              </div>
+              <div class="feature-glow cyan"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- Background Elements -->
+    <div class="about-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
   </section>
 
-  <!-- MEET THE TEAM SECTION -->
-  <section id="teamSection" class="team-section py-5">
+  <!-- MEET THE DEVELOPERS SECTION - Modern Design -->
+  <section id="teamSection" class="team-section-modern py-5">
     <div class="container">
       <div class="text-center mb-5">
-        <h2 class="team-heading">Meet the <span class="highlight-text">Developers</span></h2>
-        <div class="heading-underline mx-auto"></div>
-        <p class="text-muted mt-3">The talented minds behind Green Bites</p>
+        <span class="section-badge dark">👨‍💻 The Creators</span>
+        <h2 class="section-title-modern">Meet the <span class="gradient-text">Developers</span></h2>
+        <p class="section-subtitle">The passionate minds who brought Green Bites to life</p>
       </div>
       
       <div class="row justify-content-center g-4">
-        <!-- Team Member 1 -->
+        <!-- Developer 1 - Sajjad -->
         <div class="col-md-6 col-lg-5">
-          <div class="team-card">
-            <div class="team-card-inner">
-              <div class="team-avatar">
-                <img src="sajjad.jpg" alt="Developer 1">
-              </div>
-              <div class="team-info">
-                <h4 class="team-name">Md. Sajjad Mahmud Suton</h4>
-                <span class="team-role">Full-Stack Developer</span>
-                <p class="team-desc">
-                  Worked on UI/UX design, frontend development with Bootstrap, 
-                  and Firebase integration for real-time data management.
-                </p>
-                <div class="team-links">
-                  <a href="mailto:sajjadmahmudsuton@gmail.com" class="team-link" title="Email">
-                    <i class="bi bi-envelope-fill"></i>
-                  </a>
-                  <a href="https://github.com/Sajjad-Mahmud-Suton" class="team-link" title="GitHub">
-                    <i class="bi bi-github"></i>
-                  </a>
-                  <a href="https://www.facebook.com/sajjadmahmudsuton.suton" class="team-link" title="Facebook">
-                    <i class="bi bi-facebook"></i>
-                  </a>
+          <div class="developer-card">
+            <div class="developer-card-bg"></div>
+            <div class="developer-content">
+              <div class="developer-avatar-wrapper">
+                <div class="developer-avatar">
+                  <img src="sajjad.jpg" alt="Sajjad Mahmud Suton">
                 </div>
+                <div class="avatar-ring"></div>
+                <div class="status-badge online">
+                  <i class="bi bi-code-slash"></i>
+                </div>
+              </div>
+              
+              <h4 class="developer-name">Md. Sajjad Mahmud Suton</h4>
+              <div class="developer-role">
+                <span class="role-tag primary">Full-Stack Developer</span>
+              </div>
+              
+              <p class="developer-bio">
+                Passionate about building beautiful web applications. Specialized in UI/UX design, 
+                frontend development with Bootstrap, and backend integration with PHP & MySQL.
+              </p>
+              
+              <div class="developer-skills">
+                <span class="skill-tag">PHP</span>
+                <span class="skill-tag">MySQL</span>
+                <span class="skill-tag">Bootstrap</span>
+                <span class="skill-tag">JavaScript</span>
+              </div>
+              
+              <div class="developer-social">
+                <a href="mailto:sajjadmahmudsuton@gmail.com" class="social-btn-modern email" title="Email">
+                  <i class="bi bi-envelope-fill"></i>
+                </a>
+                <a href="https://github.com/Sajjad-Mahmud-Suton" class="social-btn-modern github" title="GitHub" target="_blank">
+                  <i class="bi bi-github"></i>
+                </a>
+                <a href="https://www.facebook.com/sajjadmahmudsuton.suton" class="social-btn-modern facebook" title="Facebook" target="_blank">
+                  <i class="bi bi-facebook"></i>
+                </a>
+                <a href="https://wa.me/8801968161494" class="social-btn-modern whatsapp" title="WhatsApp" target="_blank">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
               </div>
             </div>
           </div>
         </div>
         
-        <!-- Team Member 2 -->
+        <!-- Developer 2 - Esha -->
         <div class="col-md-6 col-lg-5">
-          <div class="team-card">
-            <div class="team-card-inner">
-              <div class="team-avatar">
-                <img src="https://ui-avatars.com/api/?name=Esha+Akter&background=1f9ebd&color=fff&size=150" alt="Developer 2">
-              </div>
-              <div class="team-info">
-                <h4 class="team-name">Esha Akter</h4>
-                <span class="team-role">Frontend Developer</span>
-                <p class="team-desc">
-                  Contributed to responsive design, UI components, 
-                  and ensuring a seamless user experience across devices.
-                </p>
-                <div class="team-links">
-                  <a href="mailto:mstehsa981@gmail.com" class="team-link" title="Email">
-                    <i class="bi bi-envelope-fill"></i>
-                  </a>
-                  <a href="https://github.com/Esha-Akter" class="team-link" title="GitHub">
-                    <i class="bi bi-github"></i>
-                  </a>
-                  <a href="#" class="team-link" title="Facebook">
-                    <i class="bi bi-facebook"></i>
-                  </a>
+          <div class="developer-card">
+            <div class="developer-card-bg alt"></div>
+            <div class="developer-content">
+              <div class="developer-avatar-wrapper">
+                <div class="developer-avatar alt">
+                  <img src="https://ui-avatars.com/api/?name=Esha+Akter&background=a855f7&color=fff&size=150&bold=true" alt="Esha Akter">
+                </div>
+                <div class="avatar-ring alt"></div>
+                <div class="status-badge online alt">
+                  <i class="bi bi-palette-fill"></i>
                 </div>
               </div>
+              
+              <h4 class="developer-name">Esha Akter</h4>
+              <div class="developer-role">
+                <span class="role-tag secondary">Frontend Developer</span>
+              </div>
+              
+              <p class="developer-bio">
+                Creative frontend developer with an eye for detail. Expert in responsive design, 
+                UI components, and creating seamless user experiences across all devices.
+              </p>
+              
+              <div class="developer-skills">
+                <span class="skill-tag alt">HTML5</span>
+                <span class="skill-tag alt">CSS3</span>
+                <span class="skill-tag alt">Bootstrap</span>
+                <span class="skill-tag alt">UI/UX</span>
+              </div>
+              
+              <div class="developer-social">
+                <a href="mailto:mstehsa981@gmail.com" class="social-btn-modern email" title="Email">
+                  <i class="bi bi-envelope-fill"></i>
+                </a>
+                <a href="https://github.com/Esha-Akter" class="social-btn-modern github" title="GitHub" target="_blank">
+                  <i class="bi bi-github"></i>
+                </a>
+                <a href="#" class="social-btn-modern facebook" title="Facebook">
+                  <i class="bi bi-facebook"></i>
+                </a>
+                <a href="#" class="social-btn-modern whatsapp" title="WhatsApp">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Project Info -->
+      <div class="project-info-card mt-5">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="project-info-content">
+              <h5><i class="bi bi-mortarboard-fill me-2"></i>Academic Project</h5>
+              <p>Green Bites was developed as a university project to demonstrate modern web development skills and solve real campus dining challenges.</p>
+            </div>
+          </div>
+          <div class="col-md-4 text-center text-md-end">
+            <a href="https://github.com/Sajjad-Mahmud-Suton/Green-Bites" target="_blank" class="btn btn-outline-light">
+              <i class="bi bi-github me-2"></i>View on GitHub
+            </a>
           </div>
         </div>
       </div>
