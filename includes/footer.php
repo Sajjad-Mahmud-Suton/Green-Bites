@@ -1,49 +1,316 @@
 <!-- Footer Include -->
-<footer class="footer-multi bg-dark text-light py-4 mt-4">
-    <div class="container">
-      <div class="row g-4">
-        <!-- ABOUT -->
-        <div class="col-md-4">
-          <h5 class="mb-2 text-white">ABOUT</h5>
-          <p class="small mb-3">
-            Green Bites is built by Sajjad Mahmud Suton & Esha Akter.<br>
-            Our aim: healthy, affordable food for students, with quick ordering and complaint support.
-          </p>
-          <div>
-            <a href="https://www.facebook.com/sajjadmahmudsuton.suton" class="me-3 text-light"><i class="bi bi-facebook me-1"></i>Facebook</a>
-            <a href="https://instagram.com" class="text-light"><i class="bi bi-instagram me-1"></i>Instagram</a>
+<footer class="footer-modern">
+    <!-- Main Footer -->
+    <div class="footer-main">
+      <div class="container">
+        <div class="row g-4 g-lg-5">
+          <!-- Brand Section -->
+          <div class="col-lg-4 col-md-6">
+            <div class="footer-brand">
+              <h3 class="footer-logo">
+                <i class="bi bi-leaf me-2"></i>Green Bites
+              </h3>
+              <p class="footer-desc">
+                Your campus food companion! We serve fresh, healthy, and affordable meals for students. 
+                Order online, skip the queue, and enjoy delicious food.
+              </p>
+              <div class="footer-social">
+                <a href="https://www.facebook.com/sajjadmahmudsuton.suton" target="_blank" class="social-btn facebook">
+                  <i class="bi bi-facebook"></i>
+                </a>
+                <a href="https://instagram.com" target="_blank" class="social-btn instagram">
+                  <i class="bi bi-instagram"></i>
+                </a>
+                <a href="https://twitter.com" target="_blank" class="social-btn twitter">
+                  <i class="bi bi-twitter-x"></i>
+                </a>
+                <a href="https://wa.me/8801968161494" target="_blank" class="social-btn whatsapp">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quick Links -->
+          <div class="col-lg-2 col-md-6 col-6">
+            <h5 class="footer-title">Quick Links</h5>
+            <ul class="footer-links">
+              <li><a href="index.php"><i class="bi bi-chevron-right"></i>Home</a></li>
+              <li><a href="index.php#aboutusSection"><i class="bi bi-chevron-right"></i>About Us</a></li>
+              <li><a href="index.php#complaintsSection"><i class="bi bi-chevron-right"></i>Complaints</a></li>
+              <li><a href="my_orders.php"><i class="bi bi-chevron-right"></i>My Orders</a></li>
+              <li><a href="profile.php"><i class="bi bi-chevron-right"></i>My Profile</a></li>
+            </ul>
+          </div>
+          
+          <!-- Menu Categories -->
+          <div class="col-lg-2 col-md-6 col-6">
+            <h5 class="footer-title">Our Menu</h5>
+            <ul class="footer-links">
+              <?php 
+              // Get categories for footer - create fresh connection
+              $footerConn = @mysqli_connect('localhost', 'root', '', 'green_bites');
+              if ($footerConn) {
+                $footerCats = @mysqli_query($footerConn, "SELECT id, name FROM categories ORDER BY name LIMIT 5");
+                if ($footerCats && mysqli_num_rows($footerCats) > 0) {
+                  while ($fcat = mysqli_fetch_assoc($footerCats)) {
+                    echo '<li><a href="category.php?id=' . $fcat['id'] . '"><i class="bi bi-chevron-right"></i>' . htmlspecialchars($fcat['name']) . '</a></li>';
+                  }
+                } else {
+                  // Static fallback if no categories
+                  echo '<li><a href="category.php?id=1"><i class="bi bi-chevron-right"></i>Drinks</a></li>';
+                  echo '<li><a href="category.php?id=2"><i class="bi bi-chevron-right"></i>Breakfast</a></li>';
+                  echo '<li><a href="category.php?id=3"><i class="bi bi-chevron-right"></i>Lunch</a></li>';
+                }
+                mysqli_close($footerConn);
+              } else {
+                // Fallback static menu
+                echo '<li><a href="category.php?id=1"><i class="bi bi-chevron-right"></i>Drinks</a></li>';
+                echo '<li><a href="category.php?id=2"><i class="bi bi-chevron-right"></i>Breakfast</a></li>';
+                echo '<li><a href="category.php?id=3"><i class="bi bi-chevron-right"></i>Lunch</a></li>';
+                echo '<li><a href="category.php?id=4"><i class="bi bi-chevron-right"></i>Snacks</a></li>';
+              }
+              ?>
+            </ul>
+          </div>
+          
+          <!-- Support & Legal -->
+          <div class="col-lg-2 col-md-6 col-6">
+            <h5 class="footer-title">Support</h5>
+            <ul class="footer-links">
+              <li><a href="faq.php"><i class="bi bi-chevron-right"></i>FAQ</a></li>
+              <li><a href="terms.php"><i class="bi bi-chevron-right"></i>Terms & Conditions</a></li>
+              <li><a href="privacy.php"><i class="bi bi-chevron-right"></i>Privacy Policy</a></li>
+              <li><a href="refund.php"><i class="bi bi-chevron-right"></i>Refund Policy</a></li>
+            </ul>
+          </div>
+          
+          <!-- Contact Info -->
+          <div class="col-lg-2 col-md-6 col-6">
+            <h5 class="footer-title">Contact Us</h5>
+            <ul class="footer-contact">
+              <li>
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>Green Bites Campus<br>Dhaka, Bangladesh</span>
+              </li>
+              <li>
+                <i class="bi bi-telephone-fill"></i>
+                <a href="tel:+8801968161494">+880 1968-161494</a>
+              </li>
+              <li>
+                <i class="bi bi-envelope-fill"></i>
+                <a href="mailto:sajjadmahmudsuton@gmail.com">sajjadmahmudsuton@gmail.com</a>
+              </li>
+              <li>
+                <i class="bi bi-clock-fill"></i>
+                <span>Sat - Thu: 8AM - 9PM</span>
+              </li>
+            </ul>
           </div>
         </div>
-        <!-- QUICK LINKS -->
-        <div class="col-md-4">
-          <h5 class="mb-2 text-white">QUICK LINKS</h5>
-          <ul class="list-unstyled small">
-            <li class="mb-1"><a href="index.php" class="footer-link">Home</a></li>
-            <li class="mb-1"><a href="drinks.php" class="footer-link">Drinks</a></li>
-            <li class="mb-1"><a href="breakfast.php" class="footer-link">Breakfast</a></li>
-            <li class="mb-1"><a href="lunch.php" class="footer-link">Lunch</a></li>
-            <li class="mb-1"><a href="snacks.php" class="footer-link">Snacks</a></li>
-            <li class="mb-1"><a href="index.php#complaintsSection" class="footer-link">Complaint</a></li>
-          </ul>
-        </div>
-        <!-- CONTACT INFO -->
-        <div class="col-md-4">
-          <h5 class="mb-2 text-white">CONTACT</h5>
-          <ul class="list-unstyled small">
-            <li class="mb-1"><i class="bi bi-telephone-fill me-2"></i><a href="tel:+8801968-161494">+8801968-161494</a> </li>
-            <li class="mb-1"><i class="bi bi-envelope-fill me-2"></i><a href="mailto:sajjadmahmudsuton@gmail.com">sajjadmahmudsuton@gmail.com</a></li>
-            <li class="mb-1"><i class="bi bi-geo-alt me-2"></i>Green Bites Campus, Bangladesh</li>
-          </ul>
-          <span class="small text-muted">For feedback: email or call anytime</span>
-        </div>
       </div>
-      <hr class="bg-light my-3">
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small">
-        <span>&copy; 2025 Green Bites. All rights reserved.</span>
-        <span>Developed by <span class="text-warning fw-bold">Sajjad & Esha</span></span>
+    </div>
+    
+    <!-- Footer Bottom -->
+    <div class="footer-bottom">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6 text-center text-md-start">
+            <p class="mb-0">&copy; 2025 <strong>Green Bites</strong>. All rights reserved.</p>
+          </div>
+          <div class="col-md-6 text-center text-md-end">
+            <p class="mb-0">
+              Made with <i class="bi bi-heart-fill text-danger"></i> by 
+              <a href="https://www.facebook.com/sajjadmahmudsuton.suton" target="_blank" class="dev-link">Sajjad</a> & 
+              <a href="#" class="dev-link">Esha</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 </footer>
+
+<style>
+/* Modern Footer Styles */
+.footer-modern {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #a0aec0;
+  margin-top: 0;
+}
+
+.footer-main {
+  padding: 60px 0 40px;
+}
+
+.footer-logo {
+  color: #22c55e;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.footer-desc {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 20px;
+  color: #94a3b8;
+}
+
+.footer-social {
+  display: flex;
+  gap: 12px;
+}
+
+.social-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.social-btn.facebook { background: #1877f2; }
+.social-btn.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.social-btn.twitter { background: #000; }
+.social-btn.whatsapp { background: #25d366; }
+
+.social-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+.footer-title {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.footer-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  height: 2px;
+  background: #22c55e;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 12px;
+}
+
+.footer-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.footer-links a i {
+  font-size: 0.7rem;
+  margin-right: 8px;
+  color: #22c55e;
+  transition: transform 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #22c55e;
+  padding-left: 5px;
+}
+
+.footer-links a:hover i {
+  transform: translateX(3px);
+}
+
+.footer-contact {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-contact li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.footer-contact li i {
+  color: #22c55e;
+  margin-right: 12px;
+  margin-top: 3px;
+  font-size: 1rem;
+}
+
+.footer-contact a {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-contact a:hover {
+  color: #22c55e;
+}
+
+.footer-bottom {
+  background: rgba(0,0,0,0.2);
+  padding: 20px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.footer-bottom p {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.dev-link {
+  color: #22c55e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.dev-link:hover {
+  color: #4ade80;
+}
+
+@media (max-width: 768px) {
+  .footer-main {
+    padding: 40px 0 30px;
+  }
+  
+  .footer-logo {
+    font-size: 1.5rem;
+  }
+  
+  .footer-title {
+    margin-top: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .footer-social {
+    justify-content: flex-start;
+    margin-bottom: 20px;
+  }
+}
+</style>
 
 <!-- Cart Toast Container -->
 <div id="cartToastContainer" class="cart-toast-container"></div>
