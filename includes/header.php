@@ -68,8 +68,8 @@ $csrf_token = $_SESSION['csrf_token'] ?? '';
             <span class="d-none d-md-inline">Welcome, ${fullName}</span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
-            <li><a class="dropdown-item" href="#"><i class="bi bi-person-lines-fill me-2"></i>View Profile</a></li>
-            <li><a class="dropdown-item" href="#"><i class="bi bi-bag-check me-2"></i>My Orders</a></li>
+            <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-lines-fill me-2"></i>View Profile</a></li>
+            <li><a class="dropdown-item" href="my_orders.php"><i class="bi bi-bag-check me-2"></i>My Orders</a></li>
             <li><a class="dropdown-item" href="#" id="cartMenuBtn"><i class="bi bi-cart3 me-2"></i>Cart <span class="badge bg-success ms-1" id="cartBadge">0</span></a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
