@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -580,9 +580,9 @@ $csrf_token = $_SESSION['csrf_token'];
                 <tr data-id="<?php echo $item['id']; ?>" data-category="<?php echo $item['category_id']; ?>">
                   <td>
                     <img src="<?php echo htmlspecialchars($item['image_url'] ?? 'https://via.placeholder.com/50'); ?>" 
-                         class="menu-item-img" alt="<?php echo htmlspecialchars($item['name']); ?>">
+                         class="menu-item-img" alt="<?php echo htmlspecialchars($item['title']); ?>">
                   </td>
-                  <td><strong><?php echo htmlspecialchars($item['name']); ?></strong></td>
+                  <td><strong><?php echo htmlspecialchars($item['title']); ?></strong></td>
                   <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                   <td><strong>৳<?php echo number_format($item['price'], 0); ?></strong></td>
                   <td class="text-muted"><?php echo htmlspecialchars(substr($item['description'] ?? '', 0, 50)); ?>...</td>
@@ -590,7 +590,7 @@ $csrf_token = $_SESSION['csrf_token'];
                     <button class="btn-action edit" onclick="editMenuItem(<?php echo $item['id']; ?>)" title="Edit">
                       <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn-action delete" onclick="deleteMenuItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['name']); ?>')" title="Delete">
+                    <button class="btn-action delete" onclick="deleteMenuItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['title']); ?>')" title="Delete">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -732,7 +732,7 @@ $csrf_token = $_SESSION['csrf_token'];
       <div class="card-custom">
         <div class="card-header">
           <h5><i class="bi bi-tag me-2"></i>Categories</h5>
-          <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#categoryModal">
+          <button class="btn btn-primary-custom" onclick="showAddCategoryModal()">
             <i class="bi bi-plus-lg me-1"></i>Add Category
           </button>
         </div>
@@ -758,8 +758,11 @@ $csrf_token = $_SESSION['csrf_token'];
                 <td><i class="bi bi-<?php echo $cat['icon'] ?? 'tag'; ?> fs-5"></i></td>
                 <td><?php echo $itemCount; ?> items</td>
                 <td>
-                  <button class="btn-action edit" onclick="editCategory(<?php echo $cat['id']; ?>)">
+                  <button class="btn-action edit" onclick="editCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars(addslashes($cat['name'])); ?>', '<?php echo $cat['icon'] ?? 'tag'; ?>', '<?php echo htmlspecialchars(addslashes($cat['description'] ?? '')); ?>')">
                     <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn-action delete" onclick="deleteCategory(<?php echo $cat['id']; ?>, '<?php echo htmlspecialchars(addslashes($cat['name'])); ?>')">
+                    <i class="bi bi-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -831,24 +834,25 @@ $csrf_token = $_SESSION['csrf_token'];
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-tag me-2"></i>Add Category</h5>
+        <h5 class="modal-title" id="categoryModalTitle"><i class="bi bi-tag me-2"></i>Add Category</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form id="categoryForm">
         <div class="modal-body">
           <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+          <input type="hidden" name="id" id="categoryId">
           <div class="mb-3">
             <label class="form-label">Category Name</label>
-            <input type="text" class="form-control" name="name" required>
+            <input type="text" class="form-control" name="name" id="categoryName" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Icon (Bootstrap Icons name)</label>
-            <input type="text" class="form-control" name="icon" placeholder="e.g. cup-straw, egg-fried">
+            <input type="text" class="form-control" name="icon" id="categoryIcon" placeholder="e.g. cup-straw, egg-fried">
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-success">Save Category</button>
+          <button type="submit" class="btn btn-success" id="categorySubmitBtn">Save Category</button>
         </div>
       </form>
     </div>
@@ -913,7 +917,7 @@ function editMenuItem(id) {
   
   document.getElementById('menuModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Edit Menu Item';
   document.getElementById('menuItemId').value = item.id;
-  document.getElementById('menuName').value = item.name;
+  document.getElementById('menuName').value = item.title;
   document.getElementById('menuCategory').value = item.category_id;
   document.getElementById('menuPrice').value = item.price;
   document.getElementById('menuImage').value = item.image_url || '';
@@ -936,7 +940,8 @@ document.getElementById('menuForm').addEventListener('submit', async function(e)
   try {
     const response = await fetch(url, {
       method: 'POST',
-      body: formData
+      body: formData,
+      credentials: 'same-origin'
     });
     const result = await response.json();
     
@@ -961,7 +966,8 @@ function deleteMenuItem(id, name) {
   fetch('api/delete_menu.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: id, csrf_token: csrfToken })
+    body: JSON.stringify({ id: id, csrf_token: csrfToken }),
+    credentials: 'same-origin'
   })
   .then(r => r.json())
   .then(result => {
@@ -984,7 +990,8 @@ document.querySelectorAll('.status-select').forEach(select => {
     fetch('api/update_order_status.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_id: orderId, status: status, csrf_token: csrfToken })
+      body: JSON.stringify({ order_id: orderId, status: status, csrf_token: csrfToken }),
+      credentials: 'same-origin'
     })
     .then(r => r.json())
     .then(result => {
@@ -1023,7 +1030,7 @@ document.getElementById('orderStatusFilter')?.addEventListener('change', functio
 // Load Users
 async function loadUsers() {
   try {
-    const response = await fetch('api/get_users.php');
+    const response = await fetch('api/get_users.php', { credentials: 'same-origin' });
     const result = await response.json();
     if (result.success) {
       const tbody = document.getElementById('usersTableBody');
@@ -1045,7 +1052,7 @@ async function loadUsers() {
 // Load Complaints
 async function loadComplaints() {
   try {
-    const response = await fetch('api/get_complaints.php');
+    const response = await fetch('api/get_complaints.php', { credentials: 'same-origin' });
     const result = await response.json();
     if (result.success) {
       const tbody = document.getElementById('complaintsTableBody');
@@ -1097,6 +1104,100 @@ function exportOrdersPDF() {
   
   doc.save('green-bites-orders.pdf');
   showAlert('PDF downloaded!');
+}
+
+// Category Data
+const categoryData = <?php echo json_encode($categories); ?>;
+
+// Category Functions
+function openAddCategoryModal() {
+  document.getElementById('categoryModalTitle').innerHTML = '<i class="bi bi-tag me-2"></i>Add Category';
+  document.getElementById('categoryForm').reset();
+  document.getElementById('categoryId').value = '';
+  if (document.getElementById('categoryDescription')) {
+    document.getElementById('categoryDescription').value = '';
+  }
+}
+
+function editCategory(id, name, icon, description) {
+  document.getElementById('categoryModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Edit Category';
+  document.getElementById('categoryId').value = id;
+  document.getElementById('categoryName').value = name;
+  document.getElementById('categoryIcon').value = icon || '';
+  if (document.getElementById('categoryDescription')) {
+    document.getElementById('categoryDescription').value = description || '';
+  }
+  
+  new bootstrap.Modal(document.getElementById('categoryModal')).show();
+}
+
+document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('categorySubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+  
+  const formData = new FormData(this);
+  const id = formData.get('id');
+  const url = id ? 'api/update_category.php' : 'api/add_category.php';
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert(result.message || 'Category saved!');
+      bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showAlert(result.message || 'Failed to save.', 'danger');
+    }
+  } catch (err) {
+    showAlert('Network error.', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save Category';
+  }
+});
+
+// Delete Category
+async function deleteCategory(id, name) {
+  if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+  
+  try {
+    const response = await fetch('api/delete_category.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': '<?php echo $_SESSION['csrf_token']; ?>'
+      },
+      body: JSON.stringify({ id: id }),
+      credentials: 'same-origin'
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert(result.message, 'success');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showAlert(result.message || 'Failed to delete category.', 'danger');
+    }
+  } catch (err) {
+    showAlert('Network error.', 'danger');
+  }
+}
+
+// Show Add Category Modal
+function showAddCategoryModal() {
+  document.getElementById('categoryModalTitle').innerHTML = '<i class="bi bi-tag me-2"></i>Add Category';
+  document.getElementById('categoryForm').reset();
+  document.getElementById('categoryId').value = '';
+  new bootstrap.Modal(document.getElementById('categoryModal')).show();
 }
 </script>
 </body>

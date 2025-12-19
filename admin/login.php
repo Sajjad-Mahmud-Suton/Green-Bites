@@ -10,7 +10,7 @@ if (isset($_SESSION['admin_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once '../db.php';
+    require_once __DIR__ . '/../db.php';
     
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
