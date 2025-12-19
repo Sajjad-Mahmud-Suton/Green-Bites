@@ -284,6 +284,86 @@ if (isset($_SESSION['user_id'])) {
       </button>
     </div>
   </div>
+
+  <!-- Complaint Form Handler Script -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const complaintForm = document.getElementById('complaintForm');
+    const complaintSuccessModal = document.getElementById('complaintSuccessModal');
+    const complaintModalClose = document.getElementById('complaintModalClose');
+    const complaintMsg = document.getElementById('complaintMsg');
+
+    if (complaintForm) {
+      complaintForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (complaintMsg) {
+          complaintMsg.textContent = '';
+          complaintMsg.className = 'text-success ms-2';
+        }
+
+        const name = document.getElementById('complaintName')?.value.trim() || '';
+        const email = document.getElementById('complaintEmail')?.value.trim() || '';
+        const message = document.getElementById('complaintText')?.value.trim() || '';
+
+        if (!name || !email || !message) {
+          if (complaintMsg) {
+            complaintMsg.textContent = 'Please fill in all required fields.';
+            complaintMsg.className = 'text-danger ms-2';
+          }
+          return;
+        }
+
+        const formData = new FormData(complaintForm);
+        const submitBtn = complaintForm.querySelector('button[type="submit"]');
+        
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+        }
+
+        try {
+          const response = await fetch('submit_complaint.php', {
+            method: 'POST',
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            complaintForm.reset();
+            if (complaintMsg) complaintMsg.textContent = '';
+            if (complaintSuccessModal) {
+              complaintSuccessModal.classList.remove('d-none');
+            }
+          } else {
+            if (complaintMsg) {
+              complaintMsg.textContent = result.message || 'Error submitting complaint.';
+              complaintMsg.className = 'text-danger ms-2';
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          if (complaintMsg) {
+            complaintMsg.textContent = 'Error submitting complaint. Please try again.';
+            complaintMsg.className = 'text-danger ms-2';
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit';
+          }
+        }
+      });
+    }
+
+    if (complaintModalClose && complaintSuccessModal) {
+      complaintModalClose.addEventListener('click', function() {
+        complaintSuccessModal.classList.add('d-none');
+      });
+    }
+  });
+  </script>
  
   
 <?php include 'includes/footer.php'; ?>

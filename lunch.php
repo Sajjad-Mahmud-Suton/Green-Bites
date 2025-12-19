@@ -48,7 +48,7 @@
                   <h5 class="card-title"><?php echo $title; ?></h5>
                   <span class="badge bg-success price-badge">৳<?php echo $price; ?></span>
                 </div>
-                <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>">Order</button>
+                <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>" data-item-image="<?php echo $image; ?>">Order</button>
               </div>
             </div>
           </div>
