@@ -42,6 +42,8 @@ foreach ($orders as $order) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <!-- jsPDF Library for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     .orders-container {
       max-width: 1000px;
@@ -318,6 +320,22 @@ foreach ($orders as $order) {
               <span class="order-total-value">৳<?php echo number_format($order['total_price'], 0); ?></span>
             </div>
 
+            <!-- Download Bill Button -->
+            <div class="mt-3 text-end">
+              <button class="btn btn-outline-success btn-sm download-bill-btn" 
+                      data-order-id="<?php echo $order['id']; ?>"
+                      data-order-date="<?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?>"
+                      data-order-status="<?php echo ucfirst($order['status'] ?? 'Pending'); ?>"
+                      data-order-total="<?php echo $order['total_price']; ?>"
+                      data-order-items='<?php echo htmlspecialchars(json_encode($items), ENT_QUOTES, 'UTF-8'); ?>'
+                      data-student-id="<?php echo htmlspecialchars($order['student_id'] ?? ''); ?>"
+                      data-instructions="<?php echo htmlspecialchars($order['special_instructions'] ?? ''); ?>"
+                      data-user-name="<?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Customer'); ?>"
+                      data-user-email="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>">
+                <i class="bi bi-download me-1"></i>Download Bill (PDF)
+              </button>
+            </div>
+
             <?php if (!empty($order['student_id']) || !empty($order['special_instructions'])): ?>
               <div class="order-details">
                 <?php if (!empty($order['student_id'])): ?>
@@ -367,7 +385,238 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   });
+
+  // PDF Bill Download functionality
+  document.querySelectorAll('.download-bill-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      generateOrderPDF(this);
+    });
+  });
 });
+
+// Generate PDF Bill with watermark
+function generateOrderPDF(button) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Get order data from button attributes
+  const orderId = button.dataset.orderId;
+  const orderDate = button.dataset.orderDate;
+  const orderStatus = button.dataset.orderStatus;
+  const orderTotal = parseFloat(button.dataset.orderTotal);
+  const items = JSON.parse(button.dataset.orderItems || '[]');
+  const studentId = button.dataset.studentId;
+  const instructions = button.dataset.instructions;
+  const userName = button.dataset.userName;
+  const userEmail = button.dataset.userEmail;
+  
+  // Current date/time for bill generation
+  const now = new Date();
+  const generatedAt = now.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  // Page dimensions
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Add Watermark - diagonal across page
+  doc.setTextColor(220, 220, 220);
+  doc.setFontSize(60);
+  doc.setFont('helvetica', 'bold');
+  
+  // Save graphics state
+  doc.saveGraphicsState();
+  
+  // Rotate and add watermark text multiple times
+  const watermarkText = 'GREEN BITES';
+  doc.text(watermarkText, pageWidth / 2, pageHeight / 2, {
+    angle: 45,
+    align: 'center'
+  });
+  
+  // Additional watermarks
+  doc.setFontSize(30);
+  doc.setTextColor(240, 240, 240);
+  doc.text('GREEN BITES', 30, 100, { angle: 45 });
+  doc.text('GREEN BITES', 130, 250, { angle: 45 });
+  
+  doc.restoreGraphicsState();
+
+  // Reset text color for content
+  doc.setTextColor(0, 0, 0);
+
+  // Header - Green background
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 45, 'F');
+
+  // Logo/Brand Name
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Campus Canteen - Fresh & Healthy Food', pageWidth / 2, 30, { align: 'center' });
+  doc.text('Order Receipt / Bill', pageWidth / 2, 40, { align: 'center' });
+
+  // Reset text color
+  doc.setTextColor(0, 0, 0);
+  
+  let y = 55;
+
+  // Bill Title
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ORDER INVOICE', pageWidth / 2, y, { align: 'center' });
+  y += 12;
+
+  // Order Info Box
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(15, y, pageWidth - 30, 35, 3, 3, 'F');
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Order ID:', 20, y + 10);
+  doc.text('Order Date:', 20, y + 20);
+  doc.text('Status:', 20, y + 30);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.text('#' + orderId, 55, y + 10);
+  doc.text(orderDate, 55, y + 20);
+  
+  // Status with color
+  if (orderStatus.toLowerCase() === 'completed') {
+    doc.setTextColor(34, 197, 94);
+  } else if (orderStatus.toLowerCase() === 'cancelled') {
+    doc.setTextColor(239, 68, 68);
+  } else {
+    doc.setTextColor(245, 158, 11);
+  }
+  doc.text(orderStatus, 55, y + 30);
+  doc.setTextColor(0, 0, 0);
+  
+  // Customer info on right side
+  doc.setFont('helvetica', 'bold');
+  doc.text('Customer:', 110, y + 10);
+  doc.text('Email:', 110, y + 20);
+  if (studentId) {
+    doc.text('Student ID:', 110, y + 30);
+  }
+  
+  doc.setFont('helvetica', 'normal');
+  doc.text(userName, 145, y + 10);
+  doc.text(userEmail || 'N/A', 145, y + 20);
+  if (studentId) {
+    doc.text(studentId, 145, y + 30);
+  }
+  
+  y += 45;
+
+  // Items Table Header
+  doc.setFillColor(34, 197, 94);
+  doc.rect(15, y, pageWidth - 30, 10, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Item', 20, y + 7);
+  doc.text('Qty', 120, y + 7);
+  doc.text('Price', 145, y + 7);
+  doc.text('Total', 175, y + 7);
+  
+  y += 15;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+
+  // Items List
+  let subtotal = 0;
+  items.forEach((item, index) => {
+    const itemName = item.title || item.name || 'Item';
+    const qty = item.quantity || 1;
+    const price = item.price || 0;
+    const itemTotal = price * qty;
+    subtotal += itemTotal;
+
+    // Alternating row background
+    if (index % 2 === 0) {
+      doc.setFillColor(249, 250, 251);
+      doc.rect(15, y - 5, pageWidth - 30, 10, 'F');
+    }
+
+    doc.text(itemName.substring(0, 30), 20, y);
+    doc.text(qty.toString(), 125, y);
+    doc.text('TK ' + price.toFixed(0), 145, y);
+    doc.text('TK ' + itemTotal.toFixed(0), 175, y);
+    y += 10;
+  });
+
+  y += 5;
+
+  // Totals Section
+  doc.setDrawColor(200, 200, 200);
+  doc.line(15, y, pageWidth - 15, y);
+  y += 10;
+
+  doc.setFont('helvetica', 'normal');
+  doc.text('Subtotal:', 140, y);
+  doc.text('TK ' + subtotal.toFixed(0), 175, y);
+  y += 8;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setFillColor(34, 197, 94);
+  doc.rect(130, y - 5, pageWidth - 145, 12, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.text('TOTAL:', 140, y + 3);
+  doc.text('TK ' + orderTotal.toFixed(0), 175, y + 3);
+  
+  doc.setTextColor(0, 0, 0);
+  y += 20;
+
+  // Special Instructions (if any)
+  if (instructions) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Special Instructions:', 20, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(instructions.substring(0, 80), 20, y + 8);
+    y += 20;
+  }
+
+  // Footer Section
+  y = pageHeight - 50;
+  
+  doc.setDrawColor(34, 197, 94);
+  doc.setLineWidth(0.5);
+  doc.line(15, y, pageWidth - 15, y);
+  y += 10;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text('Thank you for ordering from Green Bites!', pageWidth / 2, y, { align: 'center' });
+  y += 6;
+  doc.text('For queries: +8801968-161494 | sajjadmahmudsuton@gmail.com', pageWidth / 2, y, { align: 'center' });
+  y += 6;
+  doc.text('Green Bites Campus Canteen, Bangladesh', pageWidth / 2, y, { align: 'center' });
+  y += 10;
+  
+  doc.setFontSize(8);
+  doc.text('Bill Generated: ' + generatedAt, pageWidth / 2, y, { align: 'center' });
+  y += 5;
+  doc.text('This is a computer generated bill.', pageWidth / 2, y, { align: 'center' });
+
+  // Save PDF
+  const fileName = 'GreenBites_Order_' + orderId + '_Bill.pdf';
+  doc.save(fileName);
+}
 </script>
 </body>
 </html>

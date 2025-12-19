@@ -95,11 +95,11 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="badge bg-success fs-6">৳<?php echo number_format($item['price'], 0); ?></span>
                             <?php if ($isAvailable): ?>
-                            <button class="btn btn-outline-success btn-sm add-to-cart-btn" 
-                                    data-id="<?php echo $item['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($item['title']); ?>"
-                                    data-price="<?php echo $item['price']; ?>"
-                                    data-image="<?php echo htmlspecialchars($imgUrl); ?>">
+                            <button class="btn btn-outline-success btn-sm order-btn" 
+                                    data-item-id="<?php echo $item['id']; ?>"
+                                    data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
+                                    data-item-price="<?php echo $item['price']; ?>"
+                                    data-item-image="<?php echo htmlspecialchars($imgUrl); ?>">
                                 <i class="bi bi-cart-plus me-1"></i>Add
                             </button>
                             <?php else: ?>
@@ -116,31 +116,5 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
 </section>
 
 <?php include 'includes/footer.php'; ?>
-
-<!-- Cart Modal -->
-<div class="modal fade" id="cartModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title"><i class="bi bi-cart3 me-2"></i>Your Cart</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="cartItems">
-                <!-- Cart items will be populated here -->
-            </div>
-            <div class="modal-footer">
-                <div class="w-100 d-flex justify-content-between align-items-center">
-                    <h5>Total: <span class="text-success" id="cartTotal">৳0</span></h5>
-                    <button class="btn btn-success" id="checkoutBtn">
-                        <i class="bi bi-check-circle me-1"></i>Checkout
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/user.js"></script>
 </body>
 </html>

@@ -1073,38 +1073,153 @@ async function loadComplaints() {
   }
 }
 
-// Export PDF
+// Export PDF - Beautiful Order Report
 function exportOrdersPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF('l', 'mm', 'a4'); // Landscape for better table view
   
-  doc.setFontSize(18);
-  doc.text('Green Bites - Order Report', 14, 22);
-  doc.setFontSize(11);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
+  // Add Watermark
+  doc.setTextColor(240, 240, 240);
+  doc.setFontSize(60);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', pageWidth / 2, pageHeight / 2, { angle: 35, align: 'center' });
+  doc.setFontSize(40);
+  doc.text('GREEN BITES', 50, 80, { angle: 35 });
+  doc.text('GREEN BITES', 200, 180, { angle: 35 });
+  
+  // Reset text color
+  doc.setTextColor(0, 0, 0);
+  
+  // Header Background
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 35, 'F');
+  
+  // Header Text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', 15, 15);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Campus Canteen - Admin Order Report', 15, 25);
+  
+  // Report Info on right
+  doc.setFontSize(10);
+  doc.text('Generated: ' + new Date().toLocaleString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }), pageWidth - 15, 15, { align: 'right' });
+  doc.text('Total Orders: ' + ordersData.length, pageWidth - 15, 22, { align: 'right' });
+  
+  // Calculate total revenue
+  const totalRevenue = ordersData.reduce((sum, o) => sum + parseFloat(o.total_price || 0), 0);
+  doc.text('Total Revenue: TK ' + totalRevenue.toFixed(0), pageWidth - 15, 29, { align: 'right' });
+  
+  doc.setTextColor(0, 0, 0);
+  
+  // Summary Stats
+  const pendingCount = ordersData.filter(o => (o.status || '').toLowerCase() === 'pending').length;
+  const completedCount = ordersData.filter(o => (o.status || '').toLowerCase() === 'completed').length;
+  const processingCount = ordersData.filter(o => (o.status || '').toLowerCase() === 'processing').length;
+  
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(15, 40, pageWidth - 30, 15, 3, 3, 'F');
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  doc.text('Summary:', 20, 49);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(245, 158, 11);
+  doc.text('Pending: ' + pendingCount, 55, 49);
+  doc.setTextColor(59, 130, 246);
+  doc.text('Processing: ' + processingCount, 100, 49);
+  doc.setTextColor(34, 197, 94);
+  doc.text('Completed: ' + completedCount, 155, 49);
+  doc.setTextColor(0, 0, 0);
+  
+  // Prepare table data
   const tableData = ordersData.map(o => {
     const items = JSON.parse(o.items || '[]');
+    const itemsList = items.map(i => `${i.title || i.name} x${i.quantity}`).join(', ');
     return [
       '#' + o.id,
       o.full_name || 'Guest',
-      items.map(i => `${i.title || i.name} x${i.quantity}`).join(', '),
-      '৳' + parseFloat(o.total_price).toFixed(0),
-      o.status || 'Pending',
-      new Date(o.order_date).toLocaleDateString()
+      o.email || 'N/A',
+      itemsList.length > 50 ? itemsList.substring(0, 47) + '...' : itemsList,
+      'TK ' + parseFloat(o.total_price).toFixed(0),
+      (o.status || 'Pending').toUpperCase(),
+      new Date(o.order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     ];
   });
   
+  // Create table
   doc.autoTable({
-    head: [['Order ID', 'Customer', 'Items', 'Total', 'Status', 'Date']],
+    head: [['Order ID', 'Customer', 'Email', 'Items', 'Total', 'Status', 'Date']],
     body: tableData,
-    startY: 40,
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [22, 163, 74] }
+    startY: 60,
+    styles: { 
+      fontSize: 9,
+      cellPadding: 4
+    },
+    headStyles: { 
+      fillColor: [34, 197, 94],
+      textColor: 255,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    alternateRowStyles: {
+      fillColor: [249, 250, 251]
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 20 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 45 },
+      3: { cellWidth: 70 },
+      4: { halign: 'right', cellWidth: 25 },
+      5: { halign: 'center', cellWidth: 25 },
+      6: { halign: 'center', cellWidth: 30 }
+    },
+    didParseCell: function(data) {
+      // Color code status
+      if (data.column.index === 5 && data.section === 'body') {
+        const status = (data.cell.raw || '').toLowerCase();
+        if (status === 'completed') {
+          data.cell.styles.textColor = [34, 197, 94];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'pending') {
+          data.cell.styles.textColor = [245, 158, 11];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'processing') {
+          data.cell.styles.textColor = [59, 130, 246];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'cancelled') {
+          data.cell.styles.textColor = [239, 68, 68];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
   });
   
-  doc.save('green-bites-orders.pdf');
-  showAlert('PDF downloaded!');
+  // Footer
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setDrawColor(34, 197, 94);
+  doc.setLineWidth(0.5);
+  doc.line(15, finalY, pageWidth - 15, finalY);
+  
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Green Bites Campus Canteen | Contact: +8801968-161494 | Email: sajjadmahmudsuton@gmail.com', pageWidth / 2, finalY + 7, { align: 'center' });
+  doc.text('This is a computer generated report.', pageWidth / 2, finalY + 12, { align: 'center' });
+  
+  // Save PDF
+  const fileName = 'GreenBites_Orders_Report_' + new Date().toISOString().split('T')[0] + '.pdf';
+  doc.save(fileName);
+  showAlert('PDF Report downloaded!');
 }
 
 // Category Data
