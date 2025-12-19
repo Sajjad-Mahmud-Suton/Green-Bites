@@ -3,14 +3,15 @@
  * Forgot Password Endpoint
  * ------------------------
  * Accepts POST: email, csrf_token
- * If email exists, creates a password reset token and stores it with 1-hour expiry.
- * Returns JSON with generic message and includes token for testing.
+ * If email exists, creates a password reset token and sends reset email.
+ * Returns JSON with generic message.
  */
 
 session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config/mail_helper.php';
 
 function respond($success, $message, $extra = [])
 {
@@ -68,7 +69,7 @@ try {
     $expiry = date('Y-m-d H:i:s', time() + 3600); // 1 hour from now
 
     // Insert or update password_resets row
-    $insertSql = "INSERT INTO password_resets (email, token, expires_at, created_at) VALUES (?, ?, ?, NOW())";
+    $insertSql = "INSERT INTO password_resets (email, token, expiry) VALUES (?, ?, ?)";
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if (!$insertStmt) {
         respond(false, 'Server error. Please try again later.');
@@ -82,14 +83,47 @@ try {
         respond(false, 'Unable to process request at the moment. Please try again.');
     }
 
-    // In production, you would send the email here.
-    // For development/testing, we return the token directly.
+    // Get user's name for personalized email
+    $userName = 'User';
+    $nameQuery = "SELECT full_name FROM users WHERE email = ? LIMIT 1";
+    $nameStmt = mysqli_prepare($conn, $nameQuery);
+    if ($nameStmt) {
+        mysqli_stmt_bind_param($nameStmt, 's', $email);
+        mysqli_stmt_execute($nameStmt);
+        $nameResult = mysqli_stmt_get_result($nameStmt);
+        if ($nameRow = mysqli_fetch_assoc($nameResult)) {
+            $userName = $nameRow['full_name'] ?: 'User';
+        }
+        mysqli_stmt_close($nameStmt);
+    }
 
-    respond(true, $genericMessage, [
-        'token' => $token
-    ]);
+    // Send password reset email
+    // Set to false to send real emails via SMTP
+    $skipEmail = false; // Email sending enabled
+    
+    if ($skipEmail) {
+        // Development mode: return token directly without sending email
+        respond(true, $genericMessage, [
+            'token' => $token,
+            'reset_link' => 'reset_password.php?token=' . $token,
+            'dev_note' => 'Development mode: Email not sent. Click the link or copy token.'
+        ]);
+    }
+    
+    $emailResult = sendPasswordResetEmail($email, $token, $userName);
+    
+    if ($emailResult['success']) {
+        respond(true, $genericMessage);
+    } else {
+        // Email failed but token was created - still show generic message for security
+        respond(true, $genericMessage, [
+            'token' => $token,
+            'dev_note' => 'Email sending failed. Configure SMTP in config/email.php. Use this token to test: reset_password.php?token=' . $token
+        ]);
+    }
 } catch (Throwable $e) {
-    respond(false, 'Unexpected server error. Please try again later.');
+    // Show detailed error in development
+    respond(false, 'Server error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
 }
 
 

@@ -7,8 +7,8 @@
           <!-- Brand Section -->
           <div class="col-lg-4 col-md-6">
             <div class="footer-brand">
-              <h3 class="footer-logo">
-                <i class="bi bi-leaf me-2"></i>Green Bites
+              <h3 class="footer-logo d-flex align-items-center">
+                <img src="images/logo-icon.svg" alt="Green Bites" class="footer-logo-icon me-2"><span class="text-success">Green</span>&nbsp;<span class="text-white">Bites</span>
               </h3>
               <p class="footer-desc">
                 Your campus food companion! We serve fresh, healthy, and affordable meals for students. 
@@ -502,4 +502,19 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Smooth scroll to menu section from carousel
+function scrollToMenu(event) {
+  event.preventDefault();
+  const menuSection = document.getElementById('menuSection');
+  if (menuSection) {
+    const navHeight = document.querySelector('.navbar')?.offsetHeight || 80;
+    const targetPosition = menuSection.offsetTop - navHeight;
+    window.scrollTo({
+      top: targetPosition,
+      behavior: 'smooth'
+    });
+  }
+}
+</script>
 <script src="js/cart.js"></script>

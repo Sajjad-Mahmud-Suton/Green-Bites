@@ -426,30 +426,18 @@ function generateOrderPDF(button) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Add Watermark - diagonal across page
-  doc.setTextColor(220, 220, 220);
-  doc.setFontSize(60);
-  doc.setFont('helvetica', 'bold');
-  
-  // Save graphics state
-  doc.saveGraphicsState();
-  
-  // Rotate and add watermark text multiple times
-  const watermarkText = 'GREEN BITES';
-  doc.text(watermarkText, pageWidth / 2, pageHeight / 2, {
-    angle: 45,
-    align: 'center'
-  });
-  
-  // Additional watermarks
-  doc.setFontSize(30);
+  // Add Text Watermarks
   doc.setTextColor(240, 240, 240);
+  doc.setFontSize(50);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', pageWidth / 2, pageHeight / 2, { angle: 45, align: 'center' });
+  doc.setFontSize(25);
   doc.text('GREEN BITES', 30, 100, { angle: 45 });
-  doc.text('GREEN BITES', 130, 250, { angle: 45 });
-  
-  doc.restoreGraphicsState();
+  doc.text('GREEN BITES', 120, 230, { angle: 45 });
+  doc.text('GREEN BITES', 50, 200, { angle: 45 });
+  doc.text('GREEN BITES', 130, 100, { angle: 45 });
 
-  // Reset text color for content
+  // Reset for content
   doc.setTextColor(0, 0, 0);
 
   // Header - Green background
@@ -459,13 +447,23 @@ function generateOrderPDF(button) {
   // Logo/Brand Name
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(28);
+  // Header Text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.text('GREEN BITES', pageWidth / 2, 20, { align: 'center' });
+  doc.text('GREEN BITES', pageWidth / 2, 18, { align: 'center' });
   
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('Campus Canteen - Fresh & Healthy Food', pageWidth / 2, 30, { align: 'center' });
-  doc.text('Order Receipt / Bill', pageWidth / 2, 40, { align: 'center' });
+  doc.text('Campus Canteen - Fresh & Healthy Food', pageWidth / 2, 28, { align: 'center' });
+  
+  // Customer Copy badge
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(pageWidth / 2 - 25, 32, 50, 8, 2, 2, 'F');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(34, 197, 94);
+  doc.text('CUSTOMER COPY', pageWidth / 2, 38, { align: 'center' });
 
   // Reset text color
   doc.setTextColor(0, 0, 0);

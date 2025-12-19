@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login - Green Bites</title>
+  <link rel="icon" type="image/svg+xml" href="../images/logo-icon.svg">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -151,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-card">
       <div class="login-header">
         <div class="login-logo">
-          <i class="bi bi-shield-lock"></i>
+          <img src="../images/logo-icon.svg" alt="Green Bites" style="height: 70px; width: auto;">
         </div>
         <h1>Admin Login</h1>
         <p>Green Bites Control Panel</p>

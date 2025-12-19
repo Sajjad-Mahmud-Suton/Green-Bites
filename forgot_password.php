@@ -269,7 +269,11 @@ $csrf_token = $_SESSION['csrf_token'];
         if (json.success) {
           showToast(json.message || 'If this email exists, a reset link has been sent.', 'success');
           showAlert('A password reset link has been sent to your email (if it is registered).', 'success');
-          if (json.token) {
+          if (json.reset_link) {
+            // Development mode: show clickable reset link
+            resetTokenBox.innerHTML = `<a href="${json.reset_link}" class="text-success fw-bold" target="_blank">👉 Click here to Reset Password</a>`;
+            resetTokenInfo.style.display = 'block';
+          } else if (json.token) {
             resetTokenBox.textContent = json.token;
             resetTokenInfo.style.display = 'block';
           }

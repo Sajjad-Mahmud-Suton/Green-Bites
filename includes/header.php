@@ -15,7 +15,10 @@ if (isset($conn)) {
 <!-- Navbar Include -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-rgb fixed-top shadow-lg">
     <div class="container">
-      <a class="navbar-brand nav-title" href="index.php">Green Bites</a>
+      <a class="navbar-brand nav-title d-flex align-items-center" href="index.php">
+        <img src="images/logo-icon.svg" alt="Green Bites" class="navbar-logo me-2">
+        <span class="brand-text">Green</span><span class="brand-text-white">Bites</span>
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>

@@ -24,6 +24,8 @@ if (isset($_SESSION['user_id'])) {
   <meta charset="UTF-8">
   <title>Green Bites - Student</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="images/logo-icon.svg">
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
@@ -33,44 +35,129 @@ if (isset($_SESSION['user_id'])) {
 <body class="bg-light">
 <?php include 'includes/header.php'; ?>
       
-  <!-- HOME SECTION -->
-  <section id="homeSection" class="py-3">
-    <div class="container">
-      <!-- SLIDER FOR DAILY SPECIALS -->
-      <div id="foodSlider" class="carousel slide shadow rounded mb-4" data-bs-ride="carousel">
-        <div class="carousel-inner">
-          <div class="carousel-item active">
-            <img src="images/biriyani.jpg" class="d-block w-100" style="height:320px;object-fit:cover;">
-            <div class="carousel-caption bg-dark bg-opacity-50 rounded">
-              <h5>Biriyani Special</h5>
-              <p>Rich chicken biriyani, fresh salad</p>
-              <span class="badge bg-warning fs-5">৳120</span>
-            </div>
-          </div>
-          <div class="carousel-item">
-            <img src="images/burger.jpg" class="d-block w-100" style="height:320px;object-fit:cover;">
-            <div class="carousel-caption bg-dark bg-opacity-50 rounded">
-              <h5>Burger Combo</h5>
-              <p>Crispy chicken burger & fries</p>
-              <span class="badge bg-warning fs-5">৳90</span>
-            </div>
-          </div>
-          <div class="carousel-item">
-            <img src="images/friedrice.jpg" class="d-block w-100" style="height:320px;object-fit:cover;">
-            <div class="carousel-caption bg-dark bg-opacity-50 rounded">
-              <h5>Fried Rice Special</h5>
-              <p>Egg fried rice with veg curry</p>
-              <span class="badge bg-warning fs-5">৳80</span>
-            </div>
-          </div>
+  <!-- HOME SECTION - Modern Hero Carousel -->
+  <section id="homeSection" class="hero-carousel-section">
+    <div class="container-fluid px-0">
+      <!-- Modern Carousel -->
+      <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="5000">
+        
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators custom-indicators">
+          <?php
+          $slideResult = mysqli_query($conn, "SELECT * FROM carousel_slides WHERE is_active = 1 ORDER BY sort_order ASC");
+          $slideCount = mysqli_num_rows($slideResult);
+          $slideIndex = 0;
+          mysqli_data_seek($slideResult, 0);
+          while ($slideIndex < $slideCount) {
+            $activeClass = $slideIndex === 0 ? 'active' : '';
+            echo '<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="'.$slideIndex.'" class="'.$activeClass.'"></button>';
+            $slideIndex++;
+          }
+          mysqli_data_seek($slideResult, 0);
+          ?>
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#foodSlider" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon"></span>
+        
+        <!-- Carousel Items -->
+        <div class="carousel-inner">
+          <?php
+          $isFirst = true;
+          while ($slide = mysqli_fetch_assoc($slideResult)):
+            $activeClass = $isFirst ? 'active' : '';
+            $isFirst = false;
+            
+            // Get linked menu item details if available
+            $menuItem = null;
+            if (!empty($slide['menu_item_id'])) {
+              $menuQuery = mysqli_query($conn, "SELECT id, title, price, image_url FROM menu_items WHERE id = " . intval($slide['menu_item_id']));
+              $menuItem = mysqli_fetch_assoc($menuQuery);
+            }
+          ?>
+          <div class="carousel-item <?php echo $activeClass; ?>">
+            <!-- Background Image with Overlay -->
+            <div class="carousel-bg" style="background-image: url('<?php echo htmlspecialchars($slide['image_url']); ?>');">
+              <div class="carousel-overlay"></div>
+            </div>
+            
+            <!-- Content -->
+            <div class="carousel-content-wrapper">
+              <div class="container">
+                <div class="row align-items-center min-vh-50">
+                  <div class="col-lg-6">
+                    <div class="carousel-content">
+                      <span class="carousel-badge">
+                        <i class="bi bi-fire me-1"></i> Today's Special
+                      </span>
+                      <h1 class="carousel-title"><?php echo htmlspecialchars($slide['title']); ?></h1>
+                      <p class="carousel-desc"><?php echo htmlspecialchars($slide['description']); ?></p>
+                      
+                      <div class="carousel-price-tag">
+                        <span class="price-label">Only</span>
+                        <span class="price-amount">৳<?php echo number_format($slide['price'], 0); ?></span>
+                      </div>
+                      
+                      <?php if ($menuItem): ?>
+                      <button type="button" class="btn carousel-cta order-btn" 
+                              data-item-id="<?php echo $menuItem['id']; ?>" 
+                              data-item-title="<?php echo htmlspecialchars($menuItem['title']); ?>" 
+                              data-item-price="<?php echo number_format($menuItem['price'], 0); ?>"
+                              data-item-image="<?php echo htmlspecialchars($menuItem['image_url'] ?? $slide['image_url']); ?>">
+                        <i class="bi bi-cart-plus me-2"></i><?php echo htmlspecialchars($slide['btn_text'] ?? 'Order Now'); ?>
+                      </button>
+                      <?php else: ?>
+                      <a href="#menuSection" class="btn carousel-cta" onclick="scrollToMenu(event)">
+                        <i class="bi bi-bag me-2"></i>View Menu
+                      </a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                  <div class="col-lg-6 d-none d-lg-block">
+                    <div class="carousel-image-wrapper">
+                      <div class="carousel-floating-image">
+                        <img src="<?php echo htmlspecialchars($slide['image_url']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>">
+                      </div>
+                      <div class="floating-elements">
+                        <div class="float-badge badge-1">
+                          <i class="bi bi-star-fill"></i> 4.9
+                        </div>
+                        <div class="float-badge badge-2">
+                          <i class="bi bi-clock"></i> 15 min
+                        </div>
+                        <div class="float-badge badge-3">
+                          <i class="bi bi-fire"></i> Hot
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <?php endwhile; ?>
+        </div>
+        
+        <!-- Navigation Arrows -->
+        <button class="carousel-control-prev custom-nav" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+          <div class="nav-icon-wrapper">
+            <i class="bi bi-chevron-left"></i>
+          </div>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#foodSlider" data-bs-slide="next">
-          <span class="carousel-control-next-icon"></span>
+        <button class="carousel-control-next custom-nav" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+          <div class="nav-icon-wrapper">
+            <i class="bi bi-chevron-right"></i>
+          </div>
         </button>
       </div>
+    </div>
+  </section>
+
+  <!-- FOOD MENU SECTION -->
+  <section id="menuSection" class="menu-section py-5">
+    <div class="container">
+      <div class="text-center mb-4">
+        <span class="section-badge"><i class="bi bi-grid-fill me-2"></i>Our Menu</span>
+        <h2 class="section-title-modern">Delicious <span class="gradient-text">Food Items</span></h2>
+      </div>
+      
       <!-- FOOD CARDS -->
       <div id="dealsSection" class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4 mb-4">
         <?php

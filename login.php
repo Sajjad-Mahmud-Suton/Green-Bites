@@ -14,6 +14,7 @@ $csrf_token = $_SESSION['csrf_token'];
     <meta charset="UTF-8">
     <title>Login - Green Bites</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="images/logo-icon.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -145,7 +146,10 @@ $csrf_token = $_SESSION['csrf_token'];
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-card-header">
-            <h1><i class="bi bi-box-arrow-in-right me-2"></i>Welcome Back</h1>
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <img src="images/logo-icon.svg" alt="Green Bites" style="height: 50px; width: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));">
+            </div>
+            <h1 class="mb-1"><span style="color: #4ade80;">Green</span> <span style="color: #fff;">Bites</span></h1>
             <p>Login to continue ordering your favorite meals</p>
         </div>
         <div class="auth-card-body">

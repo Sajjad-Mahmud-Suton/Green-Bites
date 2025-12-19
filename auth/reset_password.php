@@ -50,7 +50,7 @@ if (strlen($new_password) < 8) {
 
 try {
     // Find reset token and ensure not expired
-    $sql  = "SELECT email, expires_at FROM password_resets WHERE token = ? LIMIT 1";
+    $sql  = "SELECT email, expiry FROM password_resets WHERE token = ? LIMIT 1";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         respond(false, 'Server error. Please try again later.');
@@ -66,7 +66,7 @@ try {
         respond(false, 'Invalid or expired reset token.');
     }
 
-    if (strtotime($reset['expires_at']) < time()) {
+    if (strtotime($reset['expiry']) < time()) {
         respond(false, 'Reset token has expired. Please request a new one.');
     }
 
@@ -94,7 +94,7 @@ try {
     }
 
     // Delete used token
-    $deleteSql  = "DELETE FROM password_resets WHERE token = ? OR expires_at < NOW()";
+    $deleteSql  = "DELETE FROM password_resets WHERE token = ? OR expiry < NOW()";
     $deleteStmt = mysqli_prepare($conn, $deleteSql);
     if ($deleteStmt) {
         mysqli_stmt_bind_param($deleteStmt, 's', $token);
