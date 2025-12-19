@@ -120,8 +120,21 @@
   .dropdown-menu-custom .dropdown-item i {
     font-size: 1.1em;
   }
-  .nav-item.dropdown:hover .dropdown-menu {
-    display: block;
+  
+  /* Show dropdown on hover for desktop */
+  @media (min-width: 992px) {
+    .nav-item.dropdown:hover > .dropdown-menu {
+      display: block;
+      margin-top: 0;
+    }
+    .nav-item.dropdown > .dropdown-menu {
+      transition: opacity 0.2s ease;
+    }
+  }
+  
+  /* Keep dropdown open when clicked */
+  .nav-item.dropdown.show > .dropdown-menu {
+    display: block !important;
   }
 
   /* Menu Page Header Styles */

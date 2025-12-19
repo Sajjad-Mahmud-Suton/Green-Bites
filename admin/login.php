@@ -1,4 +1,5 @@
 <?php
+session_set_cookie_params(['path' => '/']);
 session_start();
 
 // If already logged in, redirect to dashboard
