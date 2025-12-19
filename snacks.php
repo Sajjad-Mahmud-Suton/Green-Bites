@@ -13,7 +13,6 @@
 <body class="bg-light">
 <?php include 'includes/header.php'; ?>
 
-
 <section id="snacksSection" class="py-3">
   <div class="container">
     <!-- Page Header -->
@@ -26,10 +25,10 @@
     <!-- MENU CARDS - Dynamically loaded from database -->
     <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4 mb-4">
       <?php
-      // Include database connection
+     
       include 'db.php';
       
-      // Fetch snacks items (category_id = 4 for Snacks)
+    
       $sql = "SELECT * FROM menu_items WHERE category_id = 4 AND is_available = 1 ORDER BY title";
       $result = mysqli_query($conn, $sql);
       
