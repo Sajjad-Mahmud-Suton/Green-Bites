@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60">
+  <defs>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="steamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#4ade80;stop-opacity:0.2"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="50%" style="stop-color:#4ade80"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Food Bowl Icon -->
+  <g transform="translate(5, 5) scale(0.85)">
+    <!-- Food Bowl/Plate -->
+    <ellipse cx="30" cy="42" rx="22" ry="8" fill="url(#plateGrad)" opacity="0.3"/>
+    <path d="M8 35 Q8 45 30 45 Q52 45 52 35 L52 32 Q52 38 30 38 Q8 38 8 32 Z" fill="url(#plateGrad)"/>
+    <ellipse cx="30" cy="32" rx="22" ry="7" fill="url(#plateGrad)"/>
+    
+    <!-- Rice/Food inside bowl -->
+    <ellipse cx="30" cy="30" rx="18" ry="5" fill="#fff" opacity="0.9"/>
+    <circle cx="24" cy="29" r="2.5" fill="#fbbf24"/>
+    <circle cx="32" cy="28" r="2" fill="#f97316"/>
+    <circle cx="28" cy="31" r="1.5" fill="#22c55e"/>
+    <circle cx="36" cy="30" r="2" fill="#ef4444"/>
+    <circle cx="22" cy="31" r="1.5" fill="#22c55e"/>
+    
+    <!-- Steam Lines -->
+    <g filter="url(#glow)">
+      <path d="M22 22 Q20 18 22 14 Q24 10 22 6" stroke="url(#steamGrad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M30 20 Q28 16 30 12 Q32 8 30 4" stroke="url(#steamGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M38 22 Q36 18 38 14 Q40 10 38 6" stroke="url(#steamGrad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </g>
+    
+    <!-- Fork on left -->
+    <g transform="translate(2, 8) rotate(-25, 10, 30)">
+      <rect x="8" y="28" width="2" height="18" rx="1" fill="#e2e8f0"/>
+      <path d="M6 18 L6 28 L8 28 L8 18 M8 18 L8 28 L10 28 L10 18 M10 18 L10 28 L12 28 L12 18" stroke="#e2e8f0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </g>
+    
+    <!-- Spoon on right -->
+    <g transform="translate(46, 8) rotate(25, 10, 30)">
+      <rect x="8" y="26" width="2.5" height="18" rx="1" fill="#e2e8f0"/>
+      <ellipse cx="9.25" cy="22" rx="4" ry="5" fill="#e2e8f0"/>
+    </g>
+  </g>
+  
+  <!-- Text: Green -->
+  <text x="65" y="38" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="url(#textGrad)">Green</text>
+  
+  <!-- Text: Bites -->
+  <text x="138" y="38" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#ffffff">Bites</text>
+</svg>

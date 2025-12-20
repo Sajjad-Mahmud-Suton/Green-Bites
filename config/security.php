@@ -1,15 +1,45 @@
 <?php
 /**
- * Green Bites Security Configuration
- * ===================================
- * Comprehensive security settings and helper functions
- * Include this file at the top of all PHP files for maximum security
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███████╗███╗   ██╗    ██████╗ ██╗████████╗███████╗║
+ * ║  ██╔════╝ ██╔══██╗██╔════╝██╔════╝████╗  ██║    ██╔══██╗██║╚══██╔══╝██╔════╝║
+ * ║  ██║  ███╗██████╔╝█████╗  █████╗  ██╔██╗ ██║    ██████╔╝██║   ██║   █████╗  ║
+ * ║  ██║   ██║██╔══██╗██╔══╝  ██╔══╝  ██║╚██╗██║    ██╔══██╗██║   ██║   ██╔══╝  ║
+ * ║  ╚██████╔╝██║  ██║███████╗███████╗██║ ╚████║    ██████╔╝██║   ██║   ███████╗║
+ * ║   ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝    ╚═════╝ ╚═╝   ╚═╝   ╚══════╝║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  FILE: security.php                                                       ║
+ * ║  PATH: /config/security.php                                               ║
+ * ║  DESCRIPTION: Comprehensive security configuration & helper functions     ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  SECTIONS:                                                                ║
+ * ║    1. Error Handling Configuration                                        ║
+ * ║    2. Security Constants                                                  ║
+ * ║    3. Secure Headers (setSecurityHeaders)                                 ║
+ * ║    4. Secure Session (initSecureSession)                                  ║
+ * ║    5. CSRF Protection (generateCSRFToken, validateCSRFToken)              ║
+ * ║    6. Rate Limiting (checkRateLimit, cleanupRateLimits)                   ║
+ * ║    7. Brute Force Protection (recordLoginAttempt, isLoginLocked)          ║
+ * ║    8. Input Validation (sanitize, validateEmail)                          ║
+ * ║    9. File Upload Validation (validateUpload)                             ║
+ * ║    10. Security Logging (securityLog)                                     ║
+ * ║    11. Initialization (initSecurity)                                      ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  USAGE: Include at top of all PHP files                                   ║
+ * ║         require_once __DIR__ . '/config/security.php';                    ║
+ * ║         initSecurity();                                                   ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  (c) 2024 Green Bites - University Canteen Management System              ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
  */
 
-// ============================================
-// ERROR HANDLING (Hide errors in production)
-// ============================================
-define('PRODUCTION_MODE', false); // Set to true in production
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 1: ERROR HANDLING CONFIGURATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+if (!defined('PRODUCTION_MODE')) define('PRODUCTION_MODE', false); // Set to true in production
 
 if (PRODUCTION_MODE) {
     error_reporting(0);
@@ -21,20 +51,28 @@ if (PRODUCTION_MODE) {
     ini_set('display_errors', 1);
 }
 
-// ============================================
-// SECURITY CONSTANTS
-// ============================================
-define('SESSION_TIMEOUT', 1800);           // 30 minutes session timeout
-define('MAX_LOGIN_ATTEMPTS', 5);           // Max failed login attempts
-define('LOGIN_LOCKOUT_TIME', 900);         // 15 minutes lockout
-define('CSRF_TOKEN_EXPIRY', 3600);         // 1 hour CSRF token expiry
-define('PASSWORD_MIN_LENGTH', 8);
-define('RATE_LIMIT_REQUESTS', 100);        // Max requests per minute
-define('RATE_LIMIT_WINDOW', 60);           // Rate limit window in seconds
 
-// ============================================
-// SECURE HEADERS
-// ============================================
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 2: SECURITY CONSTANTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+if (!defined('SESSION_TIMEOUT')) define('SESSION_TIMEOUT', 1800);           // 30 minutes session timeout
+if (!defined('MAX_LOGIN_ATTEMPTS')) define('MAX_LOGIN_ATTEMPTS', 5);           // Max failed login attempts
+if (!defined('LOGIN_LOCKOUT_TIME')) define('LOGIN_LOCKOUT_TIME', 900);         // 15 minutes lockout
+if (!defined('CSRF_TOKEN_EXPIRY')) define('CSRF_TOKEN_EXPIRY', 3600);         // 1 hour CSRF token expiry
+if (!defined('PASSWORD_MIN_LENGTH')) define('PASSWORD_MIN_LENGTH', 8);
+if (!defined('RATE_LIMIT_REQUESTS')) define('RATE_LIMIT_REQUESTS', 100);        // Max requests per minute
+if (!defined('RATE_LIMIT_WINDOW')) define('RATE_LIMIT_WINDOW', 60);           // Rate limit window in seconds
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 3: SECURE HEADERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Set security-related HTTP headers
+ * Call this before any output
+ */
 function setSecurityHeaders() {
     // Prevent clickjacking
     header('X-Frame-Options: DENY');

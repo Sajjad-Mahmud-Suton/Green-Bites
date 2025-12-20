@@ -1,21 +1,42 @@
 <?php
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                         GREEN BITES - MAIN PAGE                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Description : Main landing page for Green Bites Canteen System           ║
+ * ║  Author      : Green Bites Development Team                               ║
+ * ║  Version     : 1.0.0                                                       ║
+ * ║  Last Update : December 2025                                               ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  SECTIONS:                                                                 ║
+ * ║  ├── 1. Session & Security Setup                                          ║
+ * ║  ├── 2. Hero Carousel Section                                             ║
+ * ║  ├── 3. Food Categories Section                                           ║
+ * ║  ├── 4. Menu Items Display                                                ║
+ * ║  ├── 5. Cart & Checkout Modal                                             ║
+ * ║  └── 6. Footer & Scripts                                                  ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
 
-session_start();
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║                     SECTION 1: SESSION & SECURITY                         ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+require_once __DIR__ . '/config/security.php';
+initSecureSession();
+
 require_once 'db.php';
 
+// Generate CSRF Token using security function
+$csrf_token = generateCSRFToken();
 
-if (empty($_SESSION['csrf_token'])) {
-  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-// Get user info from new auth session structure
+// Get user info from session (if logged in)
 $userName  = '';
 $userEmail = '';
 if (isset($_SESSION['user_id'])) {
   $userName  = htmlspecialchars($_SESSION['full_name'] ?? '');
   $userEmail = htmlspecialchars($_SESSION['email'] ?? '');
 }
-
 
 ?>
 <!DOCTYPE html>

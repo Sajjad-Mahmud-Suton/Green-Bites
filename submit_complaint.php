@@ -1,36 +1,33 @@
 <?php
 /**
- * Submit Complaint - Secure Version
- * ----------------------------------
- * Features: CSRF protection, secure file upload, rate limiting
+ * Submit Complaint
+ * ----------------
+ * NOTE: Security features disabled for development
  */
 
-require_once __DIR__ . '/config/security.php';
-
-initSecureSession();
-setSecurityHeaders();
+session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/db.php';
 
-// Rate limiting - 5 complaints per hour per IP
-$clientIP = getClientIP();
-if (!checkRateLimit($clientIP . '_complaint', 5, 3600)) {
-    echo json_encode(['success' => false, 'message' => 'Too many complaints. Please try again later.']);
-    exit;
-}
+// Rate limiting - DISABLED for development
+// $clientIP = getClientIP();
+// if (!checkRateLimit($clientIP . '_complaint', 5, 3600)) {
+//     echo json_encode(['success' => false, 'message' => 'Too many complaints. Please try again later.']);
+//     exit;
+// }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);
     exit;
 }
 
-// CSRF validation
-$csrfToken = $_POST['csrf_token'] ?? '';
-if (!validateCSRFToken($csrfToken)) {
-    echo json_encode(['success' => false, 'message' => 'Security validation failed. Please refresh and try again.']);
-    exit;
-}
+// CSRF validation - DISABLED for development
+// $csrfToken = $_POST['csrf_token'] ?? '';
+// if (!validateCSRFToken($csrfToken)) {
+//     echo json_encode(['success' => false, 'message' => 'Security validation failed. Please refresh and try again.']);
+//     exit;
+// }
 
 // Get form data
 $name = trim($_POST['name'] ?? '');

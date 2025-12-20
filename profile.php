@@ -1,5 +1,13 @@
 <?php
-session_start();
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                       GREEN BITES - PROFILE PAGE                          ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+require_once __DIR__ . '/config/security.php';
+initSecureSession();
+
 require_once 'db.php';
 
 // Check if user is logged in
@@ -24,11 +32,8 @@ if (!$user) {
     exit;
 }
 
-// Generate CSRF token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
+// Generate CSRF token using security function
+$csrf_token = generateCSRFToken();
 
 // Count user orders
 $orderStmt = mysqli_prepare($conn, "SELECT COUNT(*) as order_count FROM orders WHERE user_id = ?");

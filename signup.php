@@ -1,12 +1,17 @@
 <?php
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                        GREEN BITES - SIGNUP PAGE                          ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
 
-session_start();
+require_once __DIR__ . '/config/security.php';
+initSecureSession();
+
 require_once 'db.php';
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
+// Generate CSRF token using security function
+$csrf_token = generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">

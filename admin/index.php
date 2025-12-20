@@ -1384,9 +1384,15 @@ $csrf_token = $_SESSION['csrf_token'];
               <input type="text" class="form-control" name="btn_text" id="slideBtnText" value="Order Now">
             </div>
             <div class="col-md-4 mb-3">
+              <label class="form-label">Button Link</label>
+              <input type="text" class="form-control" name="btn_link" id="slideBtnLink" value="#dealsSection" placeholder="#section or URL">
+            </div>
+            <div class="col-md-4 mb-3">
               <label class="form-label">Sort Order</label>
               <input type="number" class="form-control" name="sort_order" id="slideSortOrder" value="0" min="0">
             </div>
+          </div>
+          <div class="row">
             <div class="col-md-4 mb-3 d-flex align-items-end">
               <div class="form-check form-switch">
                 <input type="checkbox" class="form-check-input" name="is_active" id="slideActive" checked>

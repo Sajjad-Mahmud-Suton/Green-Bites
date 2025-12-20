@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+  <defs>
+    <linearGradient id="bowlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+    <linearGradient id="bowlInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#86efac"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+    <linearGradient id="steamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Bowl Shadow -->
+  <ellipse cx="30" cy="48" rx="18" ry="4" fill="#000" opacity="0.15"/>
+  
+  <!-- Food Bowl/Plate - Brighter -->
+  <ellipse cx="30" cy="44" rx="22" ry="7" fill="url(#bowlGrad)" opacity="0.4"/>
+  <path d="M8 36 Q8 48 30 48 Q52 48 52 36 L52 33 Q52 40 30 40 Q8 40 8 33 Z" fill="url(#bowlGrad)" filter="url(#shadow)"/>
+  <ellipse cx="30" cy="33" rx="22" ry="8" fill="url(#bowlInner)"/>
+  
+  <!-- Bowl rim highlight -->
+  <ellipse cx="30" cy="33" rx="22" ry="8" fill="none" stroke="#fff" stroke-width="1" opacity="0.5"/>
+  
+  <!-- Rice/Food inside bowl - Brighter colors -->
+  <ellipse cx="30" cy="31" rx="17" ry="5" fill="#fff"/>
+  
+  <!-- Food items with glow -->
+  <g filter="url(#glow)">
+    <circle cx="23" cy="30" r="3" fill="#fbbf24"/>
+    <circle cx="31" cy="29" r="2.5" fill="#fb923c"/>
+    <circle cx="27" cy="32" r="2" fill="#22c55e"/>
+    <circle cx="37" cy="31" r="2.5" fill="#ef4444"/>
+    <circle cx="21" cy="32" r="2" fill="#a3e635"/>
+    <circle cx="35" cy="33" r="1.5" fill="#f97316"/>
+  </g>
+  
+  <!-- Steam Lines - White & Glowing -->
+  <g filter="url(#glow)">
+    <path d="M22 24 Q19 19 22 14 Q25 9 22 4" stroke="url(#steamGrad)" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <animate attributeName="d" dur="2s" repeatCount="indefinite"
+        values="M22 24 Q19 19 22 14 Q25 9 22 4;
+                M22 24 Q25 19 22 14 Q19 9 22 4;
+                M22 24 Q19 19 22 14 Q25 9 22 4"/>
+      <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0.8;1;0.8"/>
+    </path>
+    <path d="M30 22 Q27 16 30 10 Q33 5 30 0" stroke="url(#steamGrad)" stroke-width="3" fill="none" stroke-linecap="round">
+      <animate attributeName="d" dur="2.5s" repeatCount="indefinite"
+        values="M30 22 Q27 16 30 10 Q33 5 30 0;
+                M30 22 Q33 16 30 10 Q27 5 30 0;
+                M30 22 Q27 16 30 10 Q33 5 30 0"/>
+      <animate attributeName="opacity" dur="2.5s" repeatCount="indefinite" values="0.9;1;0.9"/>
+    </path>
+    <path d="M38 24 Q35 19 38 14 Q41 9 38 4" stroke="url(#steamGrad)" stroke-width="2.5" fill="none" stroke-linecap="round">
+      <animate attributeName="d" dur="2.2s" repeatCount="indefinite"
+        values="M38 24 Q35 19 38 14 Q41 9 38 4;
+                M38 24 Q41 19 38 14 Q35 9 38 4;
+                M38 24 Q35 19 38 14 Q41 9 38 4"/>
+      <animate attributeName="opacity" dur="2.2s" repeatCount="indefinite" values="0.7;1;0.7"/>
+    </path>
+  </g>
+  
+  <!-- Fork on left - Brighter -->
+  <g transform="translate(0, 6) rotate(-30, 12, 35)">
+    <rect x="10" y="30" width="2.5" height="20" rx="1" fill="#f8fafc"/>
+    <path d="M7 18 L7 30 M9.5 18 L9.5 30 M12 18 L12 30" stroke="#f8fafc" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Spoon on right - Brighter -->
+  <g transform="translate(48, 6) rotate(30, 12, 35)">
+    <rect x="10" y="28" width="2.5" height="20" rx="1" fill="#f8fafc"/>
+    <ellipse cx="11.25" cy="23" rx="5" ry="6" fill="#f8fafc"/>
+  </g>
+</svg>
