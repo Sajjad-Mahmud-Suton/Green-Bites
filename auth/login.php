@@ -1,12 +1,15 @@
 <?php
 /**
- * User Login Endpoint
- * -------------------
+ * User Login Endpoint - Secure Version
+ * -------------------------------------
  * Accepts POST: email, password, csrf_token
- * Verifies credentials, starts session, and returns JSON.
+ * Features: CSRF protection, brute force prevention, secure sessions
  */
 
-session_start();
+require_once __DIR__ . '/../config/security.php';
+
+initSecureSession();
+setSecurityHeaders();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../db.php';
@@ -25,10 +28,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(false, 'Invalid request method.');
 }
 
+// Rate limiting
+$clientIP = getClientIP();
+if (!checkRateLimit($clientIP . '_login', 10, 60)) { // 10 login attempts per minute
+    respond(false, 'Too many login attempts. Please try again later.');
+}
+
 // CSRF check
 $csrfToken = $_POST['csrf_token'] ?? '';
-if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+if (!validateCSRFToken($csrfToken)) {
     respond(false, 'Security validation failed. Please refresh the page and try again.');
+}
+
+// Check if IP is locked out from too many failed attempts
+$lockoutMinutes = isLoginLocked($clientIP);
+if ($lockoutMinutes) {
+    securityLog('login_locked', 'Login attempt while locked out', ['ip' => $clientIP]);
+    respond(false, "Too many failed attempts. Try again in $lockoutMinutes minutes.");
 }
 
 $email    = trim($_POST['email'] ?? '');
@@ -58,16 +74,23 @@ try {
 
     // Use generic error to avoid revealing if email exists
     if (!$user || !password_verify($password, $user['password'])) {
+        recordLoginAttempt($clientIP, false);
+        securityLog('login_failed', 'Failed login attempt', ['email' => $email]);
         respond(false, 'Invalid email or password.');
     }
 
-    // Successful login: regenerate session ID and store user data
+    // Successful login: clear failed attempts, regenerate session ID
+    recordLoginAttempt($clientIP, true);
     session_regenerate_id(true);
-    $_SESSION['user_id']    = $user['id'];
-    $_SESSION['full_name']  = $user['full_name'];
-    $_SESSION['username']   = $user['username'];
-    $_SESSION['email']      = $user['email'];
-    $_SESSION['last_active'] = time(); // for session timeout
+    
+    $_SESSION['user_id']     = $user['id'];
+    $_SESSION['full_name']   = $user['full_name'];
+    $_SESSION['username']    = $user['username'];
+    $_SESSION['email']       = $user['email'];
+    $_SESSION['last_active'] = time();
+    $_SESSION['user_ip']     = $clientIP;
+    
+    securityLog('login_success', 'Successful login', ['user_id' => $user['id'], 'email' => $email]);
 
     respond(true, 'Login successful.', [
         'redirect' => 'index.php',

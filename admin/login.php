@@ -1,6 +1,27 @@
 <?php
-session_set_cookie_params(['path' => '/']);
+/**
+ * Admin Login - Secure Version
+ * ----------------------------
+ * Features: CSRF protection, brute force prevention, secure sessions
+ */
+
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize secure session with custom settings
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Strict'
+]);
 session_start();
+
+// Set security headers
+setSecurityHeaders();
+
+// Generate CSRF token
+generateCSRFToken();
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['admin_id'])) {
@@ -9,32 +30,60 @@ if (isset($_SESSION['admin_id'])) {
 }
 
 $error = '';
+$lockoutMinutes = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../db.php';
     
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($username) || empty($password)) {
-        $error = 'Please enter username and password';
+    // Verify CSRF token
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!validateCSRFToken($csrfToken)) {
+        $error = 'Security validation failed. Please refresh and try again.';
     } else {
-        $stmt = mysqli_prepare($conn, "SELECT id, username, password, full_name FROM admins WHERE username = ? OR email = ?");
-        mysqli_stmt_bind_param($stmt, 'ss', $username, $username);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $admin = mysqli_fetch_assoc($result);
-        mysqli_stmt_close($stmt);
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $clientIP = getClientIP();
         
-        if ($admin && password_verify($password, $admin['password'])) {
-            $_SESSION['admin_id'] = $admin['id'];
-            $_SESSION['admin_name'] = $admin['full_name'];
-            $_SESSION['admin_username'] = $admin['username'];
-            
-            header('Location: index.php');
-            exit;
+        // Check if IP is locked out
+        $lockoutMinutes = isLoginLocked($clientIP);
+        
+        if ($lockoutMinutes) {
+            $error = "Too many failed attempts. Try again in $lockoutMinutes minutes.";
+            securityLog('admin_login_locked', 'Admin login attempt while locked', ['username' => $username]);
+        } elseif (empty($username) || empty($password)) {
+            $error = 'Please enter username and password';
         } else {
-            $error = 'Invalid username or password';
+            $stmt = mysqli_prepare($conn, "SELECT id, username, password, full_name FROM admins WHERE username = ? OR email = ?");
+            mysqli_stmt_bind_param($stmt, 'ss', $username, $username);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $admin = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+            
+            if ($admin && password_verify($password, $admin['password'])) {
+                // Successful login
+                recordLoginAttempt($clientIP, true);
+                
+                // Regenerate session ID to prevent session fixation
+                session_regenerate_id(true);
+                
+                $_SESSION['admin_id'] = $admin['id'];
+                $_SESSION['admin_name'] = $admin['full_name'];
+                $_SESSION['admin_username'] = $admin['username'];
+                $_SESSION['admin_login_time'] = time();
+                $_SESSION['admin_ip'] = $clientIP;
+                
+                securityLog('admin_login_success', 'Admin login successful', ['username' => $username]);
+                
+                header('Location: index.php');
+                exit;
+            } else {
+                // Failed login - record attempt
+                recordLoginAttempt($clientIP, false);
+                $error = 'Invalid username or password';
+                
+                securityLog('admin_login_failed', 'Admin login failed', ['username' => $username]);
+            }
         }
     }
 }
@@ -164,7 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         <?php endif; ?>
         
-        <form method="POST">
+        <form method="POST" autocomplete="off">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
           <div class="form-floating">
             <input type="text" class="form-control" id="username" name="username" placeholder="Username" required autofocus>
             <label for="username"><i class="bi bi-person me-2"></i>Username or Email</label>

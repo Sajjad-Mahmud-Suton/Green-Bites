@@ -1,14 +1,34 @@
 <?php
+/**
+ * Submit Complaint - Secure Version
+ * ----------------------------------
+ * Features: CSRF protection, secure file upload, rate limiting
+ */
 
+require_once __DIR__ . '/config/security.php';
 
-session_start();
-include 'db.php';
-
-
+initSecureSession();
+setSecurityHeaders();
 header('Content-Type: application/json');
+
+require_once __DIR__ . '/db.php';
+
+// Rate limiting - 5 complaints per hour per IP
+$clientIP = getClientIP();
+if (!checkRateLimit($clientIP . '_complaint', 5, 3600)) {
+    echo json_encode(['success' => false, 'message' => 'Too many complaints. Please try again later.']);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+    exit;
+}
+
+// CSRF validation
+$csrfToken = $_POST['csrf_token'] ?? '';
+if (!validateCSRFToken($csrfToken)) {
+    echo json_encode(['success' => false, 'message' => 'Security validation failed. Please refresh and try again.']);
     exit;
 }
 
@@ -30,7 +50,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Handle image upload
+// Handle image upload with enhanced security
 $imagePath = null;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     $uploadDir = 'uploads/complaints/';
@@ -44,30 +64,21 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     $maxSize = 5 * 1024 * 1024; // 5MB
     
-    // Validate file type
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
-    
-    if (!in_array($mimeType, $allowedTypes)) {
-        echo json_encode(['success' => false, 'message' => 'Invalid image type. Allowed: JPEG, PNG, GIF, WebP']);
+    // Use secure file validation
+    $uploadErrors = validateFileUpload($file, $allowedTypes, $maxSize);
+    if (!empty($uploadErrors)) {
+        echo json_encode(['success' => false, 'message' => implode(', ', $uploadErrors)]);
         exit;
     }
     
-    // Validate file size
-    if ($file['size'] > $maxSize) {
-        echo json_encode(['success' => false, 'message' => 'Image size exceeds 5MB limit']);
-        exit;
-    }
-    
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = 'complaint_' . time() . '_' . uniqid() . '.' . $extension;
+    // Generate secure random filename (prevents path traversal)
+    $filename = generateSecureFilename($file['name']);
     $targetPath = $uploadDir . $filename;
     
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-        $imagePath = $targetPath; // Store relative path
+        $imagePath = $targetPath;
+        securityLog('file_upload', 'Complaint image uploaded', ['filename' => $filename]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
         exit;

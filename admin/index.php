@@ -1,6 +1,22 @@
 <?php
-session_set_cookie_params(['path' => '/']);
+/**
+ * Admin Dashboard - Secure Version
+ */
+
+require_once __DIR__ . '/../config/security.php';
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Strict'
+]);
 session_start();
+
+// Set security headers
+setSecurityHeaders();
+
 require_once __DIR__ . '/../db.php';
 
 // Check if admin is logged in
@@ -8,6 +24,29 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
+
+// Session timeout check (30 minutes)
+if (isset($_SESSION['admin_login_time']) && (time() - $_SESSION['admin_login_time'] > 1800)) {
+    session_unset();
+    session_destroy();
+    header('Location: login.php?timeout=1');
+    exit;
+}
+
+// IP consistency check
+if (isset($_SESSION['admin_ip']) && $_SESSION['admin_ip'] !== getClientIP()) {
+    securityLog('admin_session_hijack', 'Possible session hijack attempt', [
+        'session_ip' => $_SESSION['admin_ip'],
+        'current_ip' => getClientIP()
+    ]);
+    session_unset();
+    session_destroy();
+    header('Location: login.php?error=security');
+    exit;
+}
+
+// Update last activity
+$_SESSION['admin_login_time'] = time();
 
 $admin_name = $_SESSION['admin_name'] ?? 'Admin';
 
@@ -82,6 +121,9 @@ $csrf_token = $_SESSION['csrf_token'];
   <link rel="icon" type="image/svg+xml" href="../images/logo-icon.svg">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --primary: #16a34a;
@@ -418,6 +460,92 @@ $csrf_token = $_SESSION['csrf_token'];
         margin-left: 0;
       }
     }
+    
+    /* Reports Section Styles */
+    .report-stat-card {
+      background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+    .report-stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    .report-stat-card.today {
+      border-left: 4px solid #22c55e;
+    }
+    .report-stat-card.week {
+      border-left: 4px solid #3b82f6;
+    }
+    .report-stat-card.month {
+      border-left: 4px solid #f59e0b;
+    }
+    .report-stat-card.year {
+      border-left: 4px solid #8b5cf6;
+    }
+    .report-stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .report-stat-card.today .report-stat-icon {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+    .report-stat-card.week .report-stat-icon {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+    .report-stat-card.month .report-stat-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+    .report-stat-card.year .report-stat-icon {
+      background: rgba(139, 92, 246, 0.15);
+      color: #8b5cf6;
+    }
+    .report-stat-content h6 {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin: 0 0 4px;
+      font-weight: 500;
+    }
+    .report-stat-content h3 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+    }
+    .report-stat-content small {
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+    
+    /* Growth indicators */
+    #revenueGrowth.positive, #orderGrowth.positive { color: #22c55e; }
+    #revenueGrowth.negative, #orderGrowth.negative { color: #ef4444; }
+    #revenueGrowth.positive i, #orderGrowth.positive i { color: #22c55e; }
+    #revenueGrowth.negative i, #orderGrowth.negative i { color: #ef4444; }
+    
+    /* Chart containers - fixed heights */
+    #monthlyRevenueChart { max-height: 280px !important; }
+    #dailyRevenueChart { max-height: 180px !important; }
+    #orderStatusChart { max-height: 220px !important; }
+    #hourlyChart { max-height: 180px !important; }
+    
+    /* Reports tables compact */
+    #reports .table-custom tbody { max-height: 300px; overflow-y: auto; display: block; }
+    #reports .table-custom thead, #reports .table-custom tbody tr { display: table; width: 100%; table-layout: fixed; }
   </style>
 </head>
 <body>
@@ -463,6 +591,10 @@ $csrf_token = $_SESSION['csrf_token'];
     </a>
     
     <div class="nav-section">Settings</div>
+    <a href="#" class="nav-link" data-section="reports">
+      <i class="bi bi-graph-up-arrow"></i>
+      Reports & Analytics
+    </a>
     <a href="#" class="nav-link" data-section="categories">
       <i class="bi bi-tag"></i>
       Categories
@@ -881,6 +1013,229 @@ $csrf_token = $_SESSION['csrf_token'];
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- Reports & Analytics Section -->
+    <div id="reports" class="section-tab">
+      <div class="reports-header mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h5 class="mb-0"><i class="bi bi-graph-up-arrow text-success me-2"></i>Business Analytics</h5>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-success" onclick="refreshReports()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <button class="btn btn-sm btn-success" onclick="exportReportPDF()">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Cards - Compact -->
+      <div class="row g-2 mb-3">
+        <div class="col-xl-3 col-md-6">
+          <div class="report-stat-card today" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-day"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">Today</h6>
+              <h3 id="todayRevenue" style="font-size: 1.3rem;">৳0</h3>
+              <small id="todayOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="report-stat-card week" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-week"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Week</h6>
+              <h3 id="weekRevenue" style="font-size: 1.3rem;">৳0</h3>
+              <small id="weekOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="report-stat-card month" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-month"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Month</h6>
+              <h3 id="monthRevenue" style="font-size: 1.3rem;">৳0</h3>
+              <small id="monthOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="report-stat-card year" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-check"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Year</h6>
+              <h3 id="yearRevenue" style="font-size: 1.3rem;">৳0</h3>
+              <small id="yearOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Growth Indicator - Compact single row -->
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <div class="card-custom">
+            <div class="card-body text-center py-2">
+              <small class="text-muted">Revenue Growth</small>
+              <h4 class="mb-0" id="revenueGrowth">
+                <i class="bi bi-graph-up text-success"></i> <span>0%</span>
+              </h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-custom">
+            <div class="card-body text-center py-2">
+              <small class="text-muted">Order Growth</small>
+              <h4 class="mb-0" id="orderGrowth">
+                <i class="bi bi-graph-up text-success"></i> <span>0%</span>
+              </h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-custom">
+            <div class="card-body text-center py-2">
+              <small class="text-muted">Avg Order Value</small>
+              <h4 class="mb-0 text-primary" id="avgOrderValue">৳0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row - More Compact -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+          <div class="card-custom h-100">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Monthly Revenue (Last 12 Months)</h6>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="monthlyRevenueChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card-custom h-100">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Order Status</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center py-2">
+              <canvas id="orderStatusChart" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Revenue Chart - More Compact -->
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Daily Revenue (Last 30 Days)</h6>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="dailyRevenueChart" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Items & Categories -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Selling Items</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 280px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Item</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody id="topItemsTable">
+                  <tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-tag me-2"></i>Category Performance</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 280px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Category</th>
+                    <th class="text-center">Sold</th>
+                    <th class="text-end">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryPerfTable">
+                  <tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Customers & Peak Hours - Compact -->
+      <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-people me-2"></i>Top Customers</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Customer</th>
+                    <th class="text-center">Orders</th>
+                    <th class="text-end">Spent</th>
+                  </tr>
+                </thead>
+                <tbody id="topCustomersTable">
+                  <tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Hourly Distribution</h6>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="hourlyChart" height="120"></canvas>
+              <div class="text-center mt-2">
+                <span class="badge bg-success" id="peakHourBadge">
+                  <i class="bi bi-clock me-1"></i>Peak Hour: Loading...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -2118,6 +2473,389 @@ function updateDateTime() {
 }
 updateDateTime();
 setInterval(updateDateTime, 1000);
+
+// ============================================
+// REPORTS & ANALYTICS FUNCTIONALITY
+// ============================================
+let reportsData = null;
+let monthlyChart = null;
+let dailyChart = null;
+let statusChart = null;
+let hourlyChart = null;
+
+// Load reports when section is shown
+document.querySelector('[data-section="reports"]').addEventListener('click', function() {
+  setTimeout(() => loadReports(), 100);
+});
+
+async function loadReports() {
+  try {
+    const response = await fetch('api/reports.php');
+    reportsData = await response.json();
+    
+    if (reportsData.success) {
+      updateReportStats(reportsData);
+      updateCharts(reportsData);
+      updateTables(reportsData);
+    }
+  } catch (error) {
+    console.error('Error loading reports:', error);
+  }
+}
+
+function refreshReports() {
+  loadReports();
+  showAlert('Reports refreshed!', 'success');
+}
+
+function updateReportStats(data) {
+  // Today
+  document.getElementById('todayRevenue').textContent = '৳' + formatNumber(data.overview.today.revenue);
+  document.getElementById('todayOrders').textContent = data.overview.today.orders + ' orders';
+  
+  // Week
+  document.getElementById('weekRevenue').textContent = '৳' + formatNumber(data.overview.week.revenue);
+  document.getElementById('weekOrders').textContent = data.overview.week.orders + ' orders';
+  
+  // Month
+  document.getElementById('monthRevenue').textContent = '৳' + formatNumber(data.overview.month.revenue);
+  document.getElementById('monthOrders').textContent = data.overview.month.orders + ' orders';
+  
+  // Year
+  document.getElementById('yearRevenue').textContent = '৳' + formatNumber(data.overview.year.revenue);
+  document.getElementById('yearOrders').textContent = data.overview.year.orders + ' orders';
+  
+  // Average order value
+  document.getElementById('avgOrderValue').textContent = '৳' + formatNumber(data.overview.avg_order_value);
+  
+  // Growth indicators
+  const revenueGrowthEl = document.getElementById('revenueGrowth');
+  const orderGrowthEl = document.getElementById('orderGrowth');
+  
+  const revGrowth = data.growth.revenue;
+  const ordGrowth = data.growth.orders;
+  
+  revenueGrowthEl.innerHTML = `<i class="bi bi-graph-${revGrowth >= 0 ? 'up' : 'down'}"></i> <span>${revGrowth >= 0 ? '+' : ''}${revGrowth}%</span>`;
+  revenueGrowthEl.className = revGrowth >= 0 ? 'mb-0 positive' : 'mb-0 negative';
+  
+  orderGrowthEl.innerHTML = `<i class="bi bi-graph-${ordGrowth >= 0 ? 'up' : 'down'}"></i> <span>${ordGrowth >= 0 ? '+' : ''}${ordGrowth}%</span>`;
+  orderGrowthEl.className = ordGrowth >= 0 ? 'mb-0 positive' : 'mb-0 negative';
+  
+  // Peak hour
+  document.getElementById('peakHourBadge').innerHTML = `<i class="bi bi-clock me-1"></i>Peak Hour: ${data.peak_hour_label}`;
+}
+
+function formatNumber(num) {
+  return new Intl.NumberFormat('en-BD').format(Math.round(num));
+}
+
+function updateCharts(data) {
+  // Monthly Revenue Chart
+  const monthlyCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+  if (monthlyChart) monthlyChart.destroy();
+  
+  monthlyChart = new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+      labels: data.monthly_chart.map(m => m.label),
+      datasets: [{
+        label: 'Revenue (৳)',
+        data: data.monthly_chart.map(m => m.revenue),
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderColor: '#22c55e',
+        borderWidth: 2,
+        borderRadius: 8,
+        barThickness: 30
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => '৳' + formatNumber(value)
+          }
+        }
+      }
+    }
+  });
+  
+  // Daily Revenue Chart
+  const dailyCtx = document.getElementById('dailyRevenueChart').getContext('2d');
+  if (dailyChart) dailyChart.destroy();
+  
+  dailyChart = new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: data.daily_chart.map(d => d.label),
+      datasets: [{
+        label: 'Revenue',
+        data: data.daily_chart.map(d => d.revenue),
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#3b82f6'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => '৳' + formatNumber(value)
+          }
+        }
+      }
+    }
+  });
+  
+  // Order Status Pie Chart
+  const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
+  if (statusChart) statusChart.destroy();
+  
+  const statusData = data.order_status;
+  const statusColors = {
+    'Pending': '#f59e0b',
+    'Processing': '#3b82f6',
+    'Completed': '#22c55e',
+    'Cancelled': '#ef4444'
+  };
+  
+  statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(statusData),
+      datasets: [{
+        data: Object.values(statusData),
+        backgroundColor: Object.keys(statusData).map(s => statusColors[s] || '#94a3b8'),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true
+          }
+        }
+      }
+    }
+  });
+  
+  // Hourly Distribution Chart
+  const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+  if (hourlyChart) hourlyChart.destroy();
+  
+  const hourLabels = [];
+  for (let i = 0; i < 24; i++) {
+    hourLabels.push(i.toString().padStart(2, '0') + ':00');
+  }
+  
+  hourlyChart = new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Orders',
+        data: data.hourly_distribution,
+        backgroundColor: data.hourly_distribution.map((v, i) => 
+          i === data.peak_hour ? 'rgba(34, 197, 94, 0.9)' : 'rgba(148, 163, 184, 0.5)'
+        ),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+function updateTables(data) {
+  // Top Items Table
+  const topItemsHtml = data.top_items.map((item, i) => `
+    <tr>
+      <td><span class="badge ${i < 3 ? 'bg-warning' : 'bg-secondary'}">${i + 1}</span></td>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td class="text-center">${item.quantity}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(item.revenue)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('topItemsTable').innerHTML = topItemsHtml || '<tr><td colspan="4" class="text-center text-muted">No data</td></tr>';
+  
+  // Category Performance Table
+  const catPerfHtml = data.category_performance.map((cat, i) => `
+    <tr>
+      <td><span class="badge ${i < 3 ? 'bg-success' : 'bg-secondary'}">${i + 1}</span></td>
+      <td><strong>${escapeHtml(cat.name)}</strong></td>
+      <td class="text-center">${cat.quantity}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(cat.revenue)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('categoryPerfTable').innerHTML = catPerfHtml || '<tr><td colspan="4" class="text-center text-muted">No data</td></tr>';
+  
+  // Top Customers Table
+  const topCustHtml = data.top_customers.map((cust, i) => `
+    <tr>
+      <td><span class="badge ${i < 3 ? 'bg-primary' : 'bg-secondary'}">${i + 1}</span></td>
+      <td>
+        <strong>${escapeHtml(cust.name)}</strong>
+        <br><small class="text-muted">${escapeHtml(cust.email)}</small>
+      </td>
+      <td class="text-center">${cust.orders}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(cust.spent)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('topCustomersTable').innerHTML = topCustHtml || '<tr><td colspan="4" class="text-center text-muted">No data</td></tr>';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Export Report as PDF
+function exportReportPDF() {
+  if (!reportsData) {
+    showAlert('Please wait for reports to load', 'warning');
+    return;
+  }
+  
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  
+  // Header
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Green Bites', pageWidth / 2, 18, { align: 'center' });
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Business Analytics Report', pageWidth / 2, 28, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('Generated: ' + new Date().toLocaleDateString(), pageWidth / 2, 36, { align: 'center' });
+  
+  let yPos = 55;
+  doc.setTextColor(0, 0, 0);
+  
+  // Revenue Summary
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Revenue Summary', 15, yPos);
+  yPos += 10;
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  
+  const summaryData = [
+    ['Today', reportsData.overview.today.orders + ' orders', 'TK ' + formatNumber(reportsData.overview.today.revenue)],
+    ['This Week', reportsData.overview.week.orders + ' orders', 'TK ' + formatNumber(reportsData.overview.week.revenue)],
+    ['This Month', reportsData.overview.month.orders + ' orders', 'TK ' + formatNumber(reportsData.overview.month.revenue)],
+    ['This Year', reportsData.overview.year.orders + ' orders', 'TK ' + formatNumber(reportsData.overview.year.revenue)],
+    ['All Time', reportsData.overview.all_time.orders + ' orders', 'TK ' + formatNumber(reportsData.overview.all_time.revenue)]
+  ];
+  
+  doc.autoTable({
+    startY: yPos,
+    head: [['Period', 'Orders', 'Revenue']],
+    body: summaryData,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 15, right: 15 }
+  });
+  
+  yPos = doc.lastAutoTable.finalY + 15;
+  
+  // Top Selling Items
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Top Selling Items', 15, yPos);
+  yPos += 10;
+  
+  const topItemsData = reportsData.top_items.slice(0, 10).map((item, i) => [
+    i + 1,
+    item.name,
+    item.quantity,
+    'TK ' + formatNumber(item.revenue)
+  ]);
+  
+  doc.autoTable({
+    startY: yPos,
+    head: [['#', 'Item Name', 'Qty Sold', 'Revenue']],
+    body: topItemsData,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 15, right: 15 }
+  });
+  
+  yPos = doc.lastAutoTable.finalY + 15;
+  
+  // Check if need new page
+  if (yPos > 240) {
+    doc.addPage();
+    yPos = 20;
+  }
+  
+  // Top Customers
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Top Customers', 15, yPos);
+  yPos += 10;
+  
+  const topCustData = reportsData.top_customers.slice(0, 10).map((cust, i) => [
+    i + 1,
+    cust.name,
+    cust.orders,
+    'TK ' + formatNumber(cust.spent)
+  ]);
+  
+  doc.autoTable({
+    startY: yPos,
+    head: [['#', 'Customer', 'Orders', 'Total Spent']],
+    body: topCustData,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 15, right: 15 }
+  });
+  
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.setTextColor(128, 128, 128);
+    doc.text('Green Bites Canteen - Confidential Report', pageWidth / 2, 290, { align: 'center' });
+  }
+  
+  doc.save('GreenBites_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
+  showAlert('Report exported successfully!', 'success');
+}
 </script>
 </body>
 </html>
