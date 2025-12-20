@@ -30,3 +30,10 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
 -- FUTURE CHANGES WILL BE ADDED BELOW
 -- ============================================
 
+-- [2025-12-20] Added bill_number column to orders table
+ALTER TABLE `orders` ADD COLUMN `bill_number` VARCHAR(20) AFTER `id`;
+ALTER TABLE `orders` ADD UNIQUE INDEX `idx_bill_number` (`bill_number`);
+
+-- Update existing orders with bill numbers (run this to add bill numbers to all old orders)
+UPDATE orders SET bill_number = CONCAT('GB-', DATE_FORMAT(order_date, '%Y%m%d'), '-', LPAD(id, 4, '0')) WHERE bill_number IS NULL;
+

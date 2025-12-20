@@ -291,6 +291,9 @@ foreach ($orders as $order) {
           <div class="order-card-header">
             <div>
               <span class="order-id">Order #<?php echo $order['id']; ?></span>
+              <?php if (!empty($order['bill_number'])): ?>
+                <span class="badge bg-success ms-2"><?php echo htmlspecialchars($order['bill_number']); ?></span>
+              <?php endif; ?>
               <span class="order-date ms-3">
                 <i class="bi bi-calendar3 me-1"></i>
                 <?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?>
@@ -324,6 +327,7 @@ foreach ($orders as $order) {
             <div class="mt-3 text-end">
               <button class="btn btn-outline-success btn-sm download-bill-btn" 
                       data-order-id="<?php echo $order['id']; ?>"
+                      data-bill-number="<?php echo htmlspecialchars($order['bill_number'] ?? ''); ?>"
                       data-order-date="<?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?>"
                       data-order-status="<?php echo ucfirst($order['status'] ?? 'Pending'); ?>"
                       data-order-total="<?php echo $order['total_price']; ?>"
@@ -401,6 +405,7 @@ function generateOrderPDF(button) {
   
   // Get order data from button attributes
   const orderId = button.dataset.orderId;
+  const billNumber = button.dataset.billNumber || 'GB-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + orderId.padStart(4, '0');
   const orderDate = button.dataset.orderDate;
   const orderStatus = button.dataset.orderStatus;
   const orderTotal = parseFloat(button.dataset.orderTotal);
@@ -470,11 +475,21 @@ function generateOrderPDF(button) {
   
   let y = 55;
 
+  // Bill Number - Prominent display
+  doc.setFillColor(34, 197, 94);
+  doc.roundedRect(pageWidth / 2 - 40, y - 5, 80, 12, 3, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bill No: ' + billNumber, pageWidth / 2, y + 3, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  y += 15;
+
   // Bill Title
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('ORDER INVOICE', pageWidth / 2, y, { align: 'center' });
-  y += 12;
+  y += 10;
 
   // Order Info Box
   doc.setFillColor(248, 250, 252);

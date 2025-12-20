@@ -543,6 +543,7 @@ $csrf_token = $_SESSION['csrf_token'];
             <thead>
               <tr>
                 <th>Order ID</th>
+                <th>Bill No</th>
                 <th>Customer</th>
                 <th>Items</th>
                 <th>Total</th>
@@ -557,6 +558,7 @@ $csrf_token = $_SESSION['csrf_token'];
               ?>
               <tr>
                 <td><strong>#<?php echo $order['id']; ?></strong></td>
+                <td><span class="badge bg-success"><?php echo htmlspecialchars($order['bill_number'] ?? '-'); ?></span></td>
                 <td><?php echo htmlspecialchars($order['full_name'] ?? 'Guest'); ?></td>
                 <td><?php echo $itemCount; ?> item(s)</td>
                 <td><strong>৳<?php echo number_format($order['total_price'], 0); ?></strong></td>
@@ -666,6 +668,7 @@ $csrf_token = $_SESSION['csrf_token'];
               <thead>
                 <tr>
                   <th>Order ID</th>
+                  <th>Bill No</th>
                   <th>Customer</th>
                   <th>Items</th>
                   <th>Total</th>
@@ -680,6 +683,7 @@ $csrf_token = $_SESSION['csrf_token'];
                 ?>
                 <tr data-id="<?php echo $order['id']; ?>" data-status="<?php echo $order['status'] ?? 'Pending'; ?>">
                   <td><strong>#<?php echo $order['id']; ?></strong></td>
+                  <td><span class="badge bg-success"><?php echo htmlspecialchars($order['bill_number'] ?? '-'); ?></span></td>
                   <td>
                     <strong><?php echo htmlspecialchars($order['full_name'] ?? 'Guest'); ?></strong>
                     <br><small class="text-muted"><?php echo htmlspecialchars($order['email'] ?? ''); ?></small>
@@ -1267,6 +1271,7 @@ function printAdminBill(orderId) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const items = JSON.parse(order.items || '[]');
+  const billNumber = order.bill_number || 'GB-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(order.id).padStart(4, '0');
   
   // Background Watermarks
   doc.setTextColor(245, 245, 245);
@@ -1301,14 +1306,23 @@ function printAdminBill(orderId) {
   
   doc.setTextColor(0, 0, 0);
   
+  // Bill Number - Prominent Display
+  doc.setFillColor(34, 197, 94);
+  doc.roundedRect(pageWidth / 2 - 35, 44, 70, 10, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bill No: ' + billNumber, pageWidth / 2, 51, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  
   // Order Info Section
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(15, 48, pageWidth - 30, 35, 3, 3, 'F');
+  doc.roundedRect(15, 58, pageWidth - 30, 35, 3, 3, 'F');
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(34, 197, 94);
-  doc.text('Order #' + order.id, 20, 58);
+  doc.text('Order #' + order.id, 20, 68);
   
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(9);
@@ -1316,21 +1330,21 @@ function printAdminBill(orderId) {
   doc.text('Date: ' + new Date(order.order_date).toLocaleString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit'
-  }), 20, 66);
-  doc.text('Status: ' + (order.status || 'Pending').toUpperCase(), 20, 74);
+  }), 20, 76);
+  doc.text('Status: ' + (order.status || 'Pending').toUpperCase(), 20, 84);
   
   // Customer Info
   doc.setFont('helvetica', 'bold');
-  doc.text('Customer:', pageWidth - 80, 58);
+  doc.text('Customer:', pageWidth - 80, 68);
   doc.setFont('helvetica', 'normal');
-  doc.text(order.full_name || 'Guest', pageWidth - 80, 66);
-  doc.text(order.email || 'N/A', pageWidth - 80, 74);
+  doc.text(order.full_name || 'Guest', pageWidth - 80, 76);
+  doc.text(order.email || 'N/A', pageWidth - 80, 84);
   
   // Items Table
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('Order Items', 15, 95);
+  doc.text('Order Items', 15, 112);
   
   const tableData = items.map((item, idx) => [
     idx + 1,
@@ -1343,7 +1357,7 @@ function printAdminBill(orderId) {
   doc.autoTable({
     head: [['#', 'Item Name', 'Qty', 'Price', 'Total']],
     body: tableData,
-    startY: 100,
+    startY: 115,
     styles: {
       fontSize: 10,
       cellPadding: 5

@@ -96,9 +96,19 @@ try {
 
     $order_id = mysqli_insert_id($conn);
     mysqli_stmt_close($stmt);
+    
+    // Generate unique bill number: GB-YYYYMMDD-XXXX
+    $bill_number = 'GB-' . date('Ymd') . '-' . str_pad($order_id, 4, '0', STR_PAD_LEFT);
+    
+    // Update order with bill number
+    $updateStmt = mysqli_prepare($conn, "UPDATE orders SET bill_number = ? WHERE id = ?");
+    mysqli_stmt_bind_param($updateStmt, 'si', $bill_number, $order_id);
+    mysqli_stmt_execute($updateStmt);
+    mysqli_stmt_close($updateStmt);
 
     respond(true, 'Order placed successfully!', [
-        'order_id' => $order_id
+        'order_id' => $order_id,
+        'bill_number' => $bill_number
     ]);
 
 } catch (Throwable $e) {
