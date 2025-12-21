@@ -82,16 +82,19 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
+// Get user_id if logged in
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+
 // Prepare and execute INSERT statement using prepared statements
-$stmt = mysqli_prepare($conn, "INSERT INTO complaints (name, email, message, image_path) VALUES (?, ?, ?, ?)");
+$stmt = mysqli_prepare($conn, "INSERT INTO complaints (user_id, name, email, message, image_path, status) VALUES (?, ?, ?, ?, ?, 'pending')");
 
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($conn)]);
     exit;
 }
 
-// Bind parameters
-mysqli_stmt_bind_param($stmt, "ssss", $name, $email, $message, $imagePath);
+// Bind parameters (i for user_id, s for strings)
+mysqli_stmt_bind_param($stmt, "issss", $user_id, $name, $email, $message, $imagePath);
 
 // Execute statement
 if (mysqli_stmt_execute($stmt)) {

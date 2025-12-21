@@ -895,6 +895,7 @@ $csrf_token = $_SESSION['csrf_token'];
                 <th>Email</th>
                 <th>Message</th>
                 <th>Image</th>
+                <th>Status</th>
                 <th>Date & Time</th>
                 <th>Action</th>
               </tr>
@@ -903,6 +904,62 @@ $csrf_token = $_SESSION['csrf_token'];
               <!-- Loaded via AJAX -->
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complaint Response Modal -->
+    <div class="modal fade" id="complaintModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Complaint Details</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="complaintId">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">From</label>
+                <p id="complaintFrom" class="mb-0"></p>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Email</label>
+                <p id="complaintEmail" class="mb-0"></p>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Message</label>
+              <div id="complaintMessage" class="p-3 bg-light rounded"></div>
+            </div>
+            <div id="complaintImageSection" class="mb-3" style="display:none;">
+              <label class="form-label fw-bold">Attached Image</label>
+              <div><img id="complaintImage" src="" class="img-fluid rounded" style="max-height: 200px;"></div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Update Status</label>
+                <select class="form-select" id="complaintStatus">
+                  <option value="pending">Pending</option>
+                  <option value="seen">Seen</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Admin Response <small class="text-muted">(visible to user)</small></label>
+              <textarea class="form-control" id="complaintResponse" rows="4" placeholder="Write your response to the user..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" onclick="saveComplaintResponse()">
+              <i class="bi bi-check-lg me-1"></i>Save Changes
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1921,10 +1978,21 @@ async function loadComplaints() {
       const tbody = document.getElementById('complaintsTableBody');
       let unseenCount = 0;
       
+      const statusLabels = {
+        'pending': '<span class="badge bg-warning text-dark">Pending</span>',
+        'seen': '<span class="badge bg-info">Seen</span>',
+        'in_progress': '<span class="badge bg-primary">In Progress</span>',
+        'resolved': '<span class="badge bg-success">Resolved</span>',
+        'closed': '<span class="badge bg-secondary">Closed</span>'
+      };
+      
       tbody.innerHTML = result.complaints.map(c => {
         const createdAt = new Date(c.created_at);
         const isUnseen = c.is_seen == 0 || c.is_seen === '0';
         if (isUnseen) unseenCount++;
+        
+        const status = c.status || 'pending';
+        const statusBadge = statusLabels[status] || statusLabels['pending'];
         
         const dateTimeStr = createdAt.toLocaleString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric',
@@ -1936,10 +2004,16 @@ async function loadComplaints() {
             <td>${c.id} ${isUnseen ? '<span class="badge bg-danger">New</span>' : ''}</td>
             <td><strong>${c.name}</strong></td>
             <td>${c.email}</td>
-            <td>${c.message.length > 100 ? c.message.substring(0, 100) + '...' : c.message}</td>
-            <td>${c.image_path ? `<a href="../${c.image_path}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-image"></i> View</a>` : '-'}</td>
+            <td>${c.message.length > 80 ? c.message.substring(0, 80) + '...' : c.message}</td>
+            <td>${c.image_path ? `<a href="../${c.image_path}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-image"></i></a>` : '-'}</td>
+            <td>${statusBadge}</td>
             <td><small>${dateTimeStr}</small></td>
-            <td>${isUnseen ? `<button class="btn btn-sm btn-outline-success" onclick="markComplaintSeen(${c.id})"><i class="bi bi-check"></i></button>` : '<i class="bi bi-check-circle text-success"></i>'}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-info" onclick="viewComplaint(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.email)}', \`${escapeHtml(c.message)}\`, '${c.image_path || ''}', '${status}', \`${escapeHtml(c.admin_response || '')}\`)">
+                <i class="bi bi-eye"></i>
+              </button>
+              ${isUnseen ? `<button class="btn btn-sm btn-outline-success ms-1" onclick="markComplaintSeen(${c.id})"><i class="bi bi-check"></i></button>` : ''}
+            </td>
           </tr>
         `;
       }).join('');
@@ -1955,8 +2029,69 @@ async function loadComplaints() {
   }
 }
 
+// Escape HTML for safe display
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/[&<>"'`]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[m]));
+}
+
+// View complaint details
+function viewComplaint(id, name, email, message, imagePath, status, response) {
+  document.getElementById('complaintId').value = id;
+  document.getElementById('complaintFrom').textContent = name;
+  document.getElementById('complaintEmail').textContent = email;
+  document.getElementById('complaintMessage').innerHTML = message.replace(/\n/g, '<br>');
+  document.getElementById('complaintStatus').value = status;
+  document.getElementById('complaintResponse').value = response;
+  
+  const imgSection = document.getElementById('complaintImageSection');
+  if (imagePath) {
+    document.getElementById('complaintImage').src = '../' + imagePath;
+    imgSection.style.display = 'block';
+  } else {
+    imgSection.style.display = 'none';
+  }
+  
+  new bootstrap.Modal(document.getElementById('complaintModal')).show();
+  
+  // Auto mark as seen
+  markComplaintSeen(id, true);
+}
+
+// Save complaint response
+async function saveComplaintResponse() {
+  const id = document.getElementById('complaintId').value;
+  const status = document.getElementById('complaintStatus').value;
+  const response = document.getElementById('complaintResponse').value;
+  
+  try {
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('status', status);
+    formData.append('admin_response', response);
+    
+    const res = await fetch('api/update_complaint_status.php', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    });
+    const result = await res.json();
+    
+    if (result.success) {
+      bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide();
+      loadComplaints();
+      showAlert('Complaint updated successfully', 'success');
+    } else {
+      showAlert(result.message || 'Failed to update', 'danger');
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert('Error updating complaint', 'danger');
+  }
+}
+
 // Mark single complaint as seen
-async function markComplaintSeen(id) {
+async function markComplaintSeen(id, silent = false) {
   try {
     const formData = new FormData();
     formData.append('id', id);
@@ -1969,8 +2104,10 @@ async function markComplaintSeen(id) {
     const result = await response.json();
     
     if (result.success) {
-      loadComplaints(); // Reload table
-      showAlert('Complaint marked as seen', 'success');
+      if (!silent) {
+        loadComplaints(); // Reload table
+        showAlert('Complaint marked as seen', 'success');
+      }
     }
   } catch (err) {
     console.error(err);

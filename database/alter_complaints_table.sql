@@ -49,6 +49,28 @@ CREATE TABLE IF NOT EXISTS complaints (
 -- Add created_at column (skip if already exists)
 -- ALTER TABLE complaints ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER image_path;
 
--- Step 3: Verify the final structure
+-- Step 3: Add is_seen column
+ALTER TABLE complaints ADD COLUMN is_seen TINYINT(1) NOT NULL DEFAULT 0 AFTER image_path;
+
+-- Step 4: Add user_id column (to link complaints to users)
+ALTER TABLE complaints ADD COLUMN user_id INT NULL AFTER id;
+
+-- Step 5: Add status column for complaint tracking
+ALTER TABLE complaints ADD COLUMN status ENUM('pending', 'seen', 'in_progress', 'resolved', 'closed') DEFAULT 'pending' AFTER is_seen;
+
+-- Step 6: Add admin_response column (visible to user)
+ALTER TABLE complaints ADD COLUMN admin_response TEXT NULL AFTER status;
+
+-- Step 7: Add responded_at column
+ALTER TABLE complaints ADD COLUMN responded_at DATETIME NULL AFTER admin_response;
+
+-- Step 8: Add index for faster user queries
+ALTER TABLE complaints ADD INDEX idx_user_id (user_id);
+ALTER TABLE complaints ADD INDEX idx_status (status);
+
+-- Step 9: Update existing seen complaints to 'seen' status
+UPDATE complaints SET status = 'seen' WHERE is_seen = 1 AND status = 'pending';
+
+-- Step 10: Verify the final structure
 DESCRIBE complaints;
 
