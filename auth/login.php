@@ -43,6 +43,13 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../db.php';
 
+// Define clientIP for session (security functions disabled)
+$clientIP = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+// Dummy functions for development (security disabled)
+function recordLoginAttempt($ip, $success) { return true; }
+function securityLog($type, $msg, $data = []) { return true; }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HELPER FUNCTION: JSON Response
