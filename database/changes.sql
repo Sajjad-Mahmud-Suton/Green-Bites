@@ -85,3 +85,32 @@ CREATE TABLE IF NOT EXISTS `blocked_ips` (
   UNIQUE KEY `ip_address` (`ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ============================================
+-- ORDER CANCEL FEATURE - December 29, 2025
+-- ============================================
+-- Users can now cancel orders with 'pending' status only
+-- Cancelled orders will show status = 'cancelled'
+-- No database changes needed - uses existing status field
+-- API: api/cancel_order.php
+
+-- ============================================
+-- COMPLAINT STATUS FEATURE - December 21, 2025
+-- ============================================
+-- Added user_id to link complaints to users
+ALTER TABLE `complaints` ADD COLUMN `user_id` INT NULL AFTER `id`;
+
+-- Added status column for tracking
+ALTER TABLE `complaints` ADD COLUMN `status` ENUM('pending', 'seen', 'in_progress', 'resolved', 'closed') DEFAULT 'pending' AFTER `is_seen`;
+
+-- Added admin response field (visible to user)
+ALTER TABLE `complaints` ADD COLUMN `admin_response` TEXT NULL AFTER `status`;
+
+-- Added responded_at timestamp
+ALTER TABLE `complaints` ADD COLUMN `responded_at` DATETIME NULL AFTER `admin_response`;
+
+-- Add indexes for faster queries
+ALTER TABLE `complaints` ADD INDEX `idx_user_id` (`user_id`);
+ALTER TABLE `complaints` ADD INDEX `idx_status` (`status`);
+
+-- Update existing seen complaints
+UPDATE `complaints` SET `status` = 'seen' WHERE `is_seen` = 1 AND `status` = 'pending';

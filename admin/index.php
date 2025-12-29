@@ -1552,6 +1552,71 @@ if ('Notification' in window && Notification.permission === 'default') {
 // Start checking for new complaints
 setInterval(checkNewComplaints, 30000); // Every 30 seconds
 
+// Check for orders updates every 15 seconds
+let lastOrdersData = JSON.stringify(ordersData);
+function checkOrdersUpdate() {
+  fetch('api/get_orders.php', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success && result.orders) {
+        const newData = JSON.stringify(result.orders);
+        if (newData !== lastOrdersData) {
+          lastOrdersData = newData;
+          refreshOrdersTable(result.orders);
+        }
+      }
+    })
+    .catch(err => console.error('Orders check error:', err));
+}
+
+// Refresh orders table
+function refreshOrdersTable(orders) {
+  const tbody = document.querySelector('#ordersTable tbody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = orders.map(order => {
+    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+    const status = order.status || 'Pending';
+    
+    return `
+      <tr data-id="${order.id}" data-status="${status}">
+        <td><strong>#${order.id}</strong></td>
+        <td><span class="badge bg-success">${order.bill_number || '-'}</span></td>
+        <td>
+          <strong>${order.full_name || 'Guest'}</strong>
+          <br><small class="text-muted">${order.email || ''}</small>
+        </td>
+        <td>
+          ${items.map(item => `<div class="small">${item.title || item.name || 'Item'} × ${item.quantity}</div>`).join('')}
+        </td>
+        <td><strong>৳${parseFloat(order.total_price).toLocaleString()}</strong></td>
+        <td>
+          <select class="form-select form-select-sm status-select" data-order-id="${order.id}" style="width: 130px;">
+            <option value="Pending" ${status == 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Processing" ${status == 'Processing' ? 'selected' : ''}>Processing</option>
+            <option value="Completed" ${status == 'Completed' ? 'selected' : ''}>Completed</option>
+            <option value="Cancelled" ${status == 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+          </select>
+        </td>
+        <td>${new Date(order.order_date).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+        <td>
+          <button class="btn-action edit" onclick="viewOrder(${order.id})" title="View Details">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn-action" style="background: #3b82f6;" onclick="printAdminBill(${order.id})" title="Print Admin Copy">
+            <i class="bi bi-printer"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Re-attach status change listeners
+  attachStatusListeners();
+}
+
+setInterval(checkOrdersUpdate, 15000); // Every 15 seconds
+
 // Navigation
 document.querySelectorAll('.nav-link[data-section]').forEach(link => {
   link.addEventListener('click', function(e) {
@@ -1901,28 +1966,37 @@ function deleteMenuItem(id, name) {
   .catch(() => showAlert('Network error.', 'danger'));
 }
 
-// Order Status Update
-document.querySelectorAll('.status-select').forEach(select => {
-  select.addEventListener('change', function() {
-    const orderId = this.dataset.orderId;
-    const status = this.value;
-    
-    fetch('api/update_order_status.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_id: orderId, status: status, csrf_token: csrfToken }),
-      credentials: 'same-origin'
-    })
-    .then(r => r.json())
-    .then(result => {
-      if (result.success) {
-        showAlert('Order status updated!');
-      } else {
-        showAlert(result.message || 'Failed to update.', 'danger');
-      }
-    });
+// Order Status Update - Function for re-attaching listeners
+function attachStatusListeners() {
+  document.querySelectorAll('.status-select').forEach(select => {
+    // Remove existing listener to prevent duplicates
+    select.removeEventListener('change', handleStatusChange);
+    select.addEventListener('change', handleStatusChange);
   });
-});
+}
+
+function handleStatusChange() {
+  const orderId = this.dataset.orderId;
+  const status = this.value;
+  
+  fetch('api/update_order_status.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order_id: orderId, status: status, csrf_token: csrfToken }),
+    credentials: 'same-origin'
+  })
+  .then(r => r.json())
+  .then(result => {
+    if (result.success) {
+      showAlert('Order status updated!');
+    } else {
+      showAlert(result.message || 'Failed to update.', 'danger');
+    }
+  });
+}
+
+// Initial attach
+attachStatusListeners();
 
 // Search & Filter
 document.getElementById('menuSearch')?.addEventListener('input', function() {

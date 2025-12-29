@@ -336,8 +336,9 @@
 .custom-nav {
   width: 60px;
   height: 60px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);    
+
+  border: 2px solid rgba(245, 244, 244, 0.2);
   border-radius: 50%;
   opacity: 1;
   transition: all 0.3s ease;

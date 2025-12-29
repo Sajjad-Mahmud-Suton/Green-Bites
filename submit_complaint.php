@@ -61,21 +61,32 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     $maxSize = 5 * 1024 * 1024; // 5MB
     
-    // Use secure file validation
-    $uploadErrors = validateFileUpload($file, $allowedTypes, $maxSize);
-    if (!empty($uploadErrors)) {
-        echo json_encode(['success' => false, 'message' => implode(', ', $uploadErrors)]);
+    // Validate file type
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    
+    if (!in_array($mimeType, $allowedTypes)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid file type. Only JPG, PNG, GIF, WEBP allowed.']);
         exit;
     }
     
-    // Generate secure random filename (prevents path traversal)
-    $filename = generateSecureFilename($file['name']);
+    // Validate file size
+    if ($file['size'] > $maxSize) {
+        echo json_encode(['success' => false, 'message' => 'File too large. Maximum size is 5MB.']);
+        exit;
+    }
+    
+    // Generate secure random filename
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $ext = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $ext));
+    if (empty($ext)) $ext = 'jpg';
+    $filename = 'complaint_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
     $targetPath = $uploadDir . $filename;
     
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
         $imagePath = $targetPath;
-        securityLog('file_upload', 'Complaint image uploaded', ['filename' => $filename]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
         exit;

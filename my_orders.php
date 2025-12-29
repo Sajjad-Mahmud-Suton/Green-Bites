@@ -324,7 +324,18 @@ foreach ($orders as $order) {
             </div>
 
             <!-- Download Bill Button -->
-            <div class="mt-3 text-end">
+            <div class="mt-3 d-flex justify-content-between align-items-center">
+              <?php if ($status === 'pending'): ?>
+                <button class="btn btn-outline-danger btn-sm cancel-order-btn" 
+                        data-order-id="<?php echo $order['id']; ?>">
+                  <i class="bi bi-x-circle me-1"></i>Cancel Order
+                </button>
+              <?php elseif ($status === 'cancelled'): ?>
+                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>This order was cancelled</span>
+              <?php else: ?>
+                <span class="text-muted small"><i class="bi bi-lock me-1"></i>Order cannot be cancelled (<?php echo ucfirst($status); ?>)</span>
+              <?php endif; ?>
+              
               <button class="btn btn-outline-success btn-sm download-bill-btn" 
                       data-order-id="<?php echo $order['id']; ?>"
                       data-bill-number="<?php echo htmlspecialchars($order['bill_number'] ?? ''); ?>"
@@ -396,7 +407,62 @@ document.addEventListener('DOMContentLoaded', function() {
       generateOrderPDF(this);
     });
   });
+
+  // Cancel Order functionality
+  document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const orderId = this.dataset.orderId;
+      if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+        cancelOrder(orderId, this);
+      }
+    });
+  });
 });
+
+// Cancel Order Function
+async function cancelOrder(orderId, button) {
+  button.disabled = true;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cancelling...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('order_id', orderId);
+    
+    const response = await fetch('api/cancel_order.php', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Update UI
+      const orderCard = button.closest('.order-card');
+      orderCard.dataset.status = 'cancelled';
+      
+      // Update status badge
+      const statusBadge = orderCard.querySelector('.order-status');
+      statusBadge.className = 'order-status status-cancelled';
+      statusBadge.textContent = 'Cancelled';
+      
+      // Remove cancel button
+      button.remove();
+      
+      // Show success message
+      alert('Order cancelled successfully!');
+    } else {
+      alert(result.message || 'Failed to cancel order');
+      button.disabled = false;
+      button.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancel Order';
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error cancelling order. Please try again.');
+    button.disabled = false;
+    button.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancel Order';
+  }
+}
 
 // Generate PDF Bill with watermark
 function generateOrderPDF(button) {
