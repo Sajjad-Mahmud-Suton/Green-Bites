@@ -28,7 +28,7 @@ if (!$category) {
 }
 
 // Fetch menu items for this category
-$itemsStmt = mysqli_prepare($conn, "SELECT id, title, price, image_url, description, is_available, quantity FROM menu_items WHERE category_id = ? ORDER BY title ASC");
+$itemsStmt = mysqli_prepare($conn, "SELECT id, title, price, discount_percent, image_url, description, is_available, quantity FROM menu_items WHERE category_id = ? ORDER BY title ASC");
 mysqli_stmt_bind_param($itemsStmt, 'i', $categoryId);
 mysqli_stmt_execute($itemsStmt);
 $itemsResult = mysqli_stmt_get_result($itemsStmt);
@@ -86,11 +86,20 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                 $quantity = intval($item['quantity'] ?? 0);
                 $isStockout = ($quantity == 0);
                 $isLowStock = ($quantity > 0 && $quantity <= 5);
+                $originalPrice = floatval($item['price']);
+                $discountPercent = intval($item['discount_percent'] ?? 0);
+                $finalPrice = $discountPercent > 0 ? $originalPrice - ($originalPrice * $discountPercent / 100) : $originalPrice;
+                $hasDiscount = $discountPercent > 0;
             ?>
             <div class="col">
                 <div class="card h-100 shadow-sm menu-card <?php echo $isStockout ? 'stockout-card' : (!$isAvailable ? 'opacity-50' : ''); ?>">
                     <div class="position-relative">
                         <img src="<?php echo htmlspecialchars($imgUrl); ?>" class="card-img-top <?php echo $isStockout ? 'stockout-image' : ''; ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" style="height: 180px; object-fit: cover;">
+                        <?php if ($hasDiscount): ?>
+                            <div class="discount-badge">
+                                <i class="bi bi-lightning-fill"></i><?php echo $discountPercent; ?>% OFF
+                            </div>
+                        <?php endif; ?>
                         <?php if ($isStockout): ?>
                             <div class="stock-badge stockout-badge">
                                 <i class="bi bi-x-circle-fill me-1"></i>Stockout
@@ -107,12 +116,21 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                         <p class="card-text text-muted small"><?php echo htmlspecialchars($item['description']); ?></p>
                         <?php endif; ?>
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span class="badge bg-success fs-6">৳<?php echo number_format($item['price'], 0); ?></span>
+                            <?php if ($hasDiscount): ?>
+                            <div class="price-container">
+                                <span class="badge bg-success fs-6">৳<?php echo number_format($finalPrice, 0); ?></span>
+                                <span class="original-price text-muted text-decoration-line-through ms-1">৳<?php echo number_format($originalPrice, 0); ?></span>
+                            </div>
+                            <?php else: ?>
+                            <span class="badge bg-success fs-6">৳<?php echo number_format($originalPrice, 0); ?></span>
+                            <?php endif; ?>
                             <?php if ($isStockout): ?>
                             <button class="btn btn-secondary btn-sm disabled order-btn" disabled
                                     data-item-id="<?php echo $item['id']; ?>"
                                     data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
-                                    data-item-price="<?php echo $item['price']; ?>"
+                                    data-item-price="<?php echo $finalPrice; ?>"
+                                    data-item-original-price="<?php echo $originalPrice; ?>"
+                                    data-item-discount="<?php echo $discountPercent; ?>"
                                     data-item-image="<?php echo htmlspecialchars($imgUrl); ?>">
                                 <i class="bi bi-x-circle me-1"></i>Out of Stock
                             </button>
@@ -120,7 +138,9 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                             <button class="btn btn-outline-success btn-sm order-btn" 
                                     data-item-id="<?php echo $item['id']; ?>"
                                     data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
-                                    data-item-price="<?php echo $item['price']; ?>"
+                                    data-item-price="<?php echo $finalPrice; ?>"
+                                    data-item-original-price="<?php echo $originalPrice; ?>"
+                                    data-item-discount="<?php echo $discountPercent; ?>"
                                     data-item-image="<?php echo htmlspecialchars($imgUrl); ?>">
                                 <i class="bi bi-cart-plus me-1"></i>Add
                             </button>

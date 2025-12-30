@@ -221,6 +221,13 @@
   background-clip: text;
 }
 
+.price-original {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
 .carousel-cta {
   display: inline-flex;
   align-items: center;
@@ -1659,7 +1666,19 @@
 .cart-item-price {
   font-size: 0.85rem;
   color: #16a34a;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.cart-item-original-price {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+
+.cart-discount-badge {
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  margin-left: 4px;
 }
 
 .cart-item-quantity {
@@ -2029,6 +2048,44 @@
   z-index: 10;
   animation: badgePulse 2s ease-in-out infinite;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Discount Badge - Green/Gold */
+.discount-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  animation: discountPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+@keyframes discountPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Original Price Strikethrough */
+.original-price {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+/* Price Container for discount display */
+.price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 /* Stockout Badge - Red */

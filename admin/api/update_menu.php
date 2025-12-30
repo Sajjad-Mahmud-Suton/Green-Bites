@@ -19,6 +19,7 @@ $id = intval($_POST['id'] ?? 0);
 $title = trim($_POST['name'] ?? '');
 $category_id = intval($_POST['category_id'] ?? 0);
 $price = floatval($_POST['price'] ?? 0);
+$discount_percent = intval($_POST['discount_percent'] ?? 0);
 $quantity = intval($_POST['quantity'] ?? 0);
 $image_url = trim($_POST['image_url'] ?? '');
 $description = trim($_POST['description'] ?? '');
@@ -28,13 +29,15 @@ if ($id <= 0 || empty($title) || $category_id <= 0 || $price <= 0) {
     exit;
 }
 
-// Validate quantity
+// Validate quantity and discount
 if ($quantity < 0) {
     $quantity = 0;
 }
+if ($discount_percent < 0) $discount_percent = 0;
+if ($discount_percent > 99) $discount_percent = 99;
 
-$stmt = mysqli_prepare($conn, "UPDATE menu_items SET title = ?, price = ?, image_url = ?, category_id = ?, description = ?, quantity = ? WHERE id = ?");
-mysqli_stmt_bind_param($stmt, 'sdsisii', $title, $price, $image_url, $category_id, $description, $quantity, $id);
+$stmt = mysqli_prepare($conn, "UPDATE menu_items SET title = ?, price = ?, discount_percent = ?, image_url = ?, category_id = ?, description = ?, quantity = ? WHERE id = ?");
+mysqli_stmt_bind_param($stmt, 'sdisisii', $title, $price, $discount_percent, $image_url, $category_id, $description, $quantity, $id);
 
 if (mysqli_stmt_execute($stmt)) {
     echo json_encode(['success' => true, 'message' => 'Menu item updated!']);

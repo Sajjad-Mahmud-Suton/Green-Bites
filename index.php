@@ -66,9 +66,16 @@ if (isset($_SESSION['user_id'])) {
             
             // Get linked menu item details if available
             $menuItem = null;
+            $menuDiscount = 0;
+            $menuFinalPrice = 0;
             if (!empty($slide['menu_item_id'])) {
-              $menuQuery = mysqli_query($conn, "SELECT id, title, price, image_url FROM menu_items WHERE id = " . intval($slide['menu_item_id']));
+              $menuQuery = mysqli_query($conn, "SELECT id, title, price, discount_percent, image_url FROM menu_items WHERE id = " . intval($slide['menu_item_id']));
               $menuItem = mysqli_fetch_assoc($menuQuery);
+              if ($menuItem) {
+                $menuDiscount = intval($menuItem['discount_percent'] ?? 0);
+                $menuOriginalPrice = floatval($menuItem['price']);
+                $menuFinalPrice = $menuDiscount > 0 ? $menuOriginalPrice - ($menuOriginalPrice * $menuDiscount / 100) : $menuOriginalPrice;
+              }
             }
           ?>
           <div class="carousel-item <?php echo $activeClass; ?>">
@@ -84,21 +91,29 @@ if (isset($_SESSION['user_id'])) {
                   <div class="col-lg-6">
                     <div class="carousel-content">
                       <span class="carousel-badge">
-                        <i class="bi bi-fire me-1"></i> Today's Special
+                        <i class="bi bi-fire me-1"></i> <?php echo $menuDiscount > 0 ? $menuDiscount . '% OFF!' : "Today's Special"; ?>
                       </span>
                       <h1 class="carousel-title"><?php echo htmlspecialchars($slide['title']); ?></h1>
                       <p class="carousel-desc"><?php echo htmlspecialchars($slide['description']); ?></p>
                       
                       <div class="carousel-price-tag">
+                        <?php if ($menuItem && $menuDiscount > 0): ?>
+                        <span class="price-label">Now Only</span>
+                        <span class="price-amount">৳<?php echo number_format($menuFinalPrice, 0); ?></span>
+                        <span class="price-original">৳<?php echo number_format($menuOriginalPrice, 0); ?></span>
+                        <?php else: ?>
                         <span class="price-label">Only</span>
                         <span class="price-amount">৳<?php echo number_format($slide['price'], 0); ?></span>
+                        <?php endif; ?>
                       </div>
                       
                       <?php if ($menuItem): ?>
                       <button type="button" class="btn carousel-cta order-btn" 
                               data-item-id="<?php echo $menuItem['id']; ?>" 
                               data-item-title="<?php echo htmlspecialchars($menuItem['title']); ?>" 
-                              data-item-price="<?php echo number_format($menuItem['price'], 0); ?>"
+                              data-item-price="<?php echo $menuFinalPrice; ?>"
+                              data-item-original-price="<?php echo $menuOriginalPrice; ?>"
+                              data-item-discount="<?php echo $menuDiscount; ?>"
                               data-item-image="<?php echo htmlspecialchars($menuItem['image_url'] ?? $slide['image_url']); ?>">
                         <i class="bi bi-cart-plus me-2"></i><?php echo htmlspecialchars($slide['btn_text'] ?? 'Order Now'); ?>
                       </button>
@@ -170,7 +185,10 @@ if (isset($_SESSION['user_id'])) {
         if ($result && mysqli_num_rows($result) > 0) {
           while ($row = mysqli_fetch_assoc($result)) {
             $title = htmlspecialchars($row['title']);
-            $price = number_format($row['price'], 0);
+            $originalPrice = floatval($row['price']);
+            $discountPercent = intval($row['discount_percent'] ?? 0);
+            $finalPrice = $discountPercent > 0 ? $originalPrice - ($originalPrice * $discountPercent / 100) : $originalPrice;
+            $hasDiscount = $discountPercent > 0;
             $image = htmlspecialchars($row['image_url']);
             $description = htmlspecialchars($row['description'] ?? '');
             $quantity = intval($row['quantity'] ?? 0);
@@ -181,6 +199,11 @@ if (isset($_SESSION['user_id'])) {
               <div class="card shadow menu-card border-success h-100 <?php echo $isStockout ? 'stockout-card' : ''; ?>">
                 <div class="position-relative">
                   <img src="<?php echo $image; ?>" class="card-img-top <?php echo $isStockout ? 'stockout-image' : ''; ?>" style="height:140px;object-fit:cover;" alt="<?php echo $title; ?>">
+                  <?php if ($hasDiscount): ?>
+                    <div class="discount-badge">
+                      <i class="bi bi-lightning-fill"></i><?php echo $discountPercent; ?>% OFF
+                    </div>
+                  <?php endif; ?>
                   <?php if ($isStockout): ?>
                     <div class="stock-badge stockout-badge">
                       <i class="bi bi-x-circle-fill me-1"></i>Stockout
@@ -194,14 +217,21 @@ if (isset($_SESSION['user_id'])) {
                 <div class="card-body">
                   <div class="card-title-price">
                     <h5 class="card-title"><?php echo $title; ?></h5>
-                    <span class="badge bg-success price-badge">৳<?php echo $price; ?></span>
+                    <?php if ($hasDiscount): ?>
+                    <div class="price-display">
+                      <span class="badge bg-success price-badge">৳<?php echo number_format($finalPrice, 0); ?></span>
+                      <small class="original-price">৳<?php echo number_format($originalPrice, 0); ?></small>
+                    </div>
+                    <?php else: ?>
+                    <span class="badge bg-success price-badge">৳<?php echo number_format($originalPrice, 0); ?></span>
+                    <?php endif; ?>
                   </div>
                   <?php if ($isStockout): ?>
-                    <button class="btn btn-secondary w-100 disabled" disabled>
+                    <button class="btn btn-secondary w-100 disabled order-btn" disabled data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $finalPrice; ?>" data-item-original-price="<?php echo $originalPrice; ?>" data-item-discount="<?php echo $discountPercent; ?>" data-item-image="<?php echo $image; ?>">
                       <i class="bi bi-x-circle me-1"></i>Out of Stock
                     </button>
                   <?php else: ?>
-                    <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>">Order</button>
+                    <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $finalPrice; ?>" data-item-original-price="<?php echo $originalPrice; ?>" data-item-discount="<?php echo $discountPercent; ?>" data-item-image="<?php echo $image; ?>">Order</button>
                   <?php endif; ?>
                 </div>
               </div>

@@ -776,13 +776,18 @@ $csrf_token = $_SESSION['csrf_token'];
                   <th>Name</th>
                   <th>Category</th>
                   <th>Price</th>
+                  <th>Discount</th>
                   <th>Stock</th>
-                  <th>Description</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($menuItems as $item): ?>
+                <?php foreach ($menuItems as $item): 
+                  $originalPrice = floatval($item['price']);
+                  $discountPercent = intval($item['discount_percent'] ?? 0);
+                  $finalPrice = $discountPercent > 0 ? $originalPrice - ($originalPrice * $discountPercent / 100) : $originalPrice;
+                  $hasDiscount = $discountPercent > 0;
+                ?>
                 <tr data-id="<?php echo $item['id']; ?>" data-category="<?php echo $item['category_id']; ?>">
                   <td>
                     <img src="<?php echo htmlspecialchars($item['image_url'] ?? 'https://via.placeholder.com/50'); ?>" 
@@ -790,7 +795,21 @@ $csrf_token = $_SESSION['csrf_token'];
                   </td>
                   <td><strong><?php echo htmlspecialchars($item['title']); ?></strong></td>
                   <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
-                  <td><strong>৳<?php echo number_format($item['price'], 0); ?></strong></td>
+                  <td>
+                    <?php if ($hasDiscount): ?>
+                      <strong class="text-success">৳<?php echo number_format($finalPrice, 0); ?></strong>
+                      <br><small class="text-muted text-decoration-line-through">৳<?php echo number_format($originalPrice, 0); ?></small>
+                    <?php else: ?>
+                      <strong>৳<?php echo number_format($originalPrice, 0); ?></strong>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if ($hasDiscount): ?>
+                      <span class="badge bg-danger"><?php echo $discountPercent; ?>% OFF</span>
+                    <?php else: ?>
+                      <span class="badge bg-secondary">No Discount</span>
+                    <?php endif; ?>
+                  </td>
                   <td>
                     <?php 
                     $qty = $item['quantity'] ?? 0;
@@ -810,7 +829,6 @@ $csrf_token = $_SESSION['csrf_token'];
                       </button>
                     </div>
                   </td>
-                  <td class="text-muted"><?php echo htmlspecialchars(substr($item['description'] ?? '', 0, 50)); ?>...</td>
                   <td>
                     <button class="btn-action edit" onclick="editMenuItem(<?php echo $item['id']; ?>)" title="Edit">
                       <i class="bi bi-pencil"></i>
@@ -1381,16 +1399,31 @@ $csrf_token = $_SESSION['csrf_token'];
             </div>
           </div>
           <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
               <label class="form-label">Price (৳) <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="price" id="menuPrice" min="0" step="0.01" required>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Discount (%) <i class="bi bi-percent text-success"></i></label>
+              <input type="number" class="form-control" name="discount_percent" id="menuDiscount" min="0" max="99" value="0">
+              <small class="text-muted">0 = No discount</small>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Final Price</label>
+              <div class="input-group">
+                <span class="input-group-text">৳</span>
+                <input type="text" class="form-control bg-light" id="menuFinalPrice" readonly>
+              </div>
+              <small class="text-success" id="discountPreview"></small>
+            </div>
+            <div class="col-md-3 mb-3">
               <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="quantity" id="menuQuantity" min="0" value="10" required>
-              <small class="text-muted">Available stock count</small>
+              <small class="text-muted">Available stock</small>
             </div>
-            <div class="col-md-4 mb-3">
+          </div>
+          <div class="row">
+            <div class="col-md-12 mb-3">
               <label class="form-label">Image URL</label>
               <input type="url" class="form-control" name="image_url" id="menuImage" placeholder="https://...">
             </div>
@@ -2095,6 +2128,9 @@ function openAddMenuModal() {
   document.getElementById('menuModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add Menu Item';
   document.getElementById('menuForm').reset();
   document.getElementById('menuItemId').value = '';
+  document.getElementById('menuDiscount').value = 0;
+  document.getElementById('menuFinalPrice').value = '';
+  document.getElementById('discountPreview').textContent = '';
 }
 
 function editMenuItem(id) {
@@ -2106,12 +2142,41 @@ function editMenuItem(id) {
   document.getElementById('menuName').value = item.title;
   document.getElementById('menuCategory').value = item.category_id;
   document.getElementById('menuPrice').value = item.price;
+  document.getElementById('menuDiscount').value = item.discount_percent || 0;
   document.getElementById('menuQuantity').value = item.quantity || 0;
   document.getElementById('menuImage').value = item.image_url || '';
   document.getElementById('menuDescription').value = item.description || '';
   
+  // Calculate and show final price
+  calculateFinalPrice();
+  
   new bootstrap.Modal(document.getElementById('menuModal')).show();
 }
+
+// Calculate final price with discount
+function calculateFinalPrice() {
+  const price = parseFloat(document.getElementById('menuPrice').value) || 0;
+  const discount = parseInt(document.getElementById('menuDiscount').value) || 0;
+  
+  if (price > 0) {
+    const finalPrice = price - (price * discount / 100);
+    document.getElementById('menuFinalPrice').value = finalPrice.toFixed(0);
+    
+    if (discount > 0) {
+      const savings = price - finalPrice;
+      document.getElementById('discountPreview').innerHTML = `<i class="bi bi-tag-fill"></i> Save ৳${savings.toFixed(0)} (${discount}% off)`;
+    } else {
+      document.getElementById('discountPreview').textContent = '';
+    }
+  } else {
+    document.getElementById('menuFinalPrice').value = '';
+    document.getElementById('discountPreview').textContent = '';
+  }
+}
+
+// Add event listeners for price calculation
+document.getElementById('menuPrice').addEventListener('input', calculateFinalPrice);
+document.getElementById('menuDiscount').addEventListener('input', calculateFinalPrice);
 
 document.getElementById('menuForm').addEventListener('submit', async function(e) {
   e.preventDefault();

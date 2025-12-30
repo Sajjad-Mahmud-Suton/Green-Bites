@@ -283,9 +283,14 @@ function showLoginModal() {
 }
 
 // Show order popup for single item
-function showOrderPopup(itemId, itemTitle, itemPrice, itemImage) {
+function showOrderPopup(itemId, itemTitle, itemPrice, itemImage, itemOriginalPrice = null, itemDiscount = 0) {
   const modal = document.getElementById('orderItemModal');
   if (!modal) return;
+
+  const price = parseFloat(itemPrice);
+  const originalPrice = parseFloat(itemOriginalPrice) || price;
+  const discount = parseInt(itemDiscount) || 0;
+  const hasDiscount = discount > 0;
 
   // Fill modal with item details
   const modalTitle = modal.querySelector('.order-item-title');
@@ -295,7 +300,17 @@ function showOrderPopup(itemId, itemTitle, itemPrice, itemImage) {
   const totalDisplay = modal.querySelector('.order-item-total');
 
   if (modalTitle) modalTitle.textContent = itemTitle;
-  if (modalPrice) modalPrice.textContent = `৳${itemPrice}`;
+  if (modalPrice) {
+    if (hasDiscount) {
+      modalPrice.innerHTML = `
+        <span class="discounted-price">৳${price.toFixed(0)}</span>
+        <span class="original-price text-muted text-decoration-line-through ms-2">৳${originalPrice.toFixed(0)}</span>
+        <span class="badge bg-danger ms-2">${discount}% OFF</span>
+      `;
+    } else {
+      modalPrice.innerHTML = `<span>৳${price.toFixed(0)}</span>`;
+    }
+  }
   if (modalImage) {
     if (itemImage) {
       modalImage.innerHTML = `<img src="${itemImage}" alt="${itemTitle}">`;
@@ -304,12 +319,14 @@ function showOrderPopup(itemId, itemTitle, itemPrice, itemImage) {
     }
   }
   if (quantityInput) quantityInput.value = 1;
-  if (totalDisplay) totalDisplay.textContent = `৳${itemPrice}`;
+  if (totalDisplay) totalDisplay.textContent = `৳${price.toFixed(0)}`;
 
   // Store item data in modal
   modal.dataset.itemId = itemId;
   modal.dataset.itemTitle = itemTitle;
-  modal.dataset.itemPrice = itemPrice;
+  modal.dataset.itemPrice = price;
+  modal.dataset.itemOriginalPrice = originalPrice;
+  modal.dataset.itemDiscount = discount;
   modal.dataset.itemImage = itemImage || '';
 
   const bsModal = new bootstrap.Modal(modal);
@@ -338,6 +355,8 @@ async function addToCartFromPopup() {
   const itemId = modal.dataset.itemId;
   const itemTitle = modal.dataset.itemTitle;
   const itemPrice = parseFloat(modal.dataset.itemPrice);
+  const itemOriginalPrice = parseFloat(modal.dataset.itemOriginalPrice) || itemPrice;
+  const itemDiscount = parseInt(modal.dataset.itemDiscount) || 0;
   const itemImage = modal.dataset.itemImage;
   const quantity = parseInt(document.getElementById('orderQuantity')?.value) || 1;
 
@@ -377,6 +396,8 @@ async function addToCartFromPopup() {
       id: itemId,
       title: itemTitle,
       price: itemPrice,
+      originalPrice: itemOriginalPrice,
+      discount: itemDiscount,
       image: itemImage,
       quantity: quantity,
       maxStock: stockInfo.quantity
@@ -446,14 +467,22 @@ function renderCartPanel() {
   if (cartContent) cartContent.style.display = 'block';
   if (checkoutBtn) checkoutBtn.disabled = false;
 
-  cartItemsContainer.innerHTML = cart.map(item => `
+  cartItemsContainer.innerHTML = cart.map(item => {
+    const hasDiscount = item.discount && item.discount > 0;
+    const priceDisplay = hasDiscount 
+      ? `<span class="cart-item-price">৳${item.price}</span>
+         <span class="cart-item-original-price text-muted text-decoration-line-through">৳${item.originalPrice}</span>
+         <span class="badge bg-danger cart-discount-badge">${item.discount}% OFF</span>`
+      : `<span class="cart-item-price">৳${item.price}</span>`;
+    
+    return `
     <div class="cart-item" data-id="${item.id}">
       <div class="cart-item-image">
         ${item.image ? `<img src="${item.image}" alt="${item.title}">` : '<i class="bi bi-image text-muted"></i>'}
       </div>
       <div class="cart-item-details">
         <h6 class="cart-item-title">${item.title}</h6>
-        <span class="cart-item-price">৳${item.price}</span>
+        ${priceDisplay}
       </div>
       <div class="cart-item-quantity">
         <button class="qty-btn qty-minus" onclick="updateQuantity('${item.id}', -1)">
@@ -471,7 +500,8 @@ function renderCartPanel() {
         <i class="bi bi-trash"></i>
       </button>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   const subtotal = getCartTotal();
   if (cartSubtotal) cartSubtotal.textContent = `৳${subtotal.toFixed(0)}`;
@@ -627,6 +657,8 @@ async function handleOrderClick(event) {
   const itemTitle = button.dataset.itemTitle;
   const itemPrice = button.dataset.itemPrice;
   const itemImage = button.dataset.itemImage || '';
+  const itemOriginalPrice = button.dataset.itemOriginalPrice || itemPrice;
+  const itemDiscount = button.dataset.itemDiscount || 0;
 
   // Check login status first
   const loggedIn = await checkLoginStatus();
@@ -636,8 +668,8 @@ async function handleOrderClick(event) {
     return;
   }
 
-  // Show order popup
-  showOrderPopup(itemId, itemTitle, itemPrice, itemImage);
+  // Show order popup with discount info
+  showOrderPopup(itemId, itemTitle, itemPrice, itemImage, itemOriginalPrice, itemDiscount);
 }
 
 // Initialize on DOM ready

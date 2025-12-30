@@ -21,6 +21,7 @@ if ($csrf !== ($_SESSION['csrf_token'] ?? '')) {
 $title = trim($_POST['name'] ?? '');
 $category_id = intval($_POST['category_id'] ?? 0);
 $price = floatval($_POST['price'] ?? 0);
+$discount_percent = intval($_POST['discount_percent'] ?? 0);
 $quantity = intval($_POST['quantity'] ?? 10);
 $image_url = trim($_POST['image_url'] ?? '');
 $description = trim($_POST['description'] ?? '');
@@ -31,14 +32,16 @@ if (empty($title) || $category_id <= 0 || $price <= 0) {
     exit;
 }
 
-// Validate quantity
+// Validate quantity and discount
 if ($quantity < 0) {
     $quantity = 0;
 }
+if ($discount_percent < 0) $discount_percent = 0;
+if ($discount_percent > 99) $discount_percent = 99;
 
 // Insert
-$stmt = mysqli_prepare($conn, "INSERT INTO menu_items (title, price, image_url, category_id, description, quantity) VALUES (?, ?, ?, ?, ?, ?)");
-mysqli_stmt_bind_param($stmt, 'sdsisi', $title, $price, $image_url, $category_id, $description, $quantity);
+$stmt = mysqli_prepare($conn, "INSERT INTO menu_items (title, price, discount_percent, image_url, category_id, description, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)");
+mysqli_stmt_bind_param($stmt, 'sdisisi', $title, $price, $discount_percent, $image_url, $category_id, $description, $quantity);
 
 if (mysqli_stmt_execute($stmt)) {
     $id = mysqli_insert_id($conn);
