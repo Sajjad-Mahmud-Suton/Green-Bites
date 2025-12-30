@@ -248,11 +248,11 @@ foreach ($orders as $order) {
     </div>
     <div class="orders-stats">
       <div class="stat-box">
-        <div class="stat-box-value"><?php echo count($orders); ?></div>
+        <div class="stat-box-value total-orders"><?php echo count($orders); ?></div>
         <div class="stat-box-label">Total Orders</div>
       </div>
       <div class="stat-box">
-        <div class="stat-box-value">৳<?php echo number_format($totalSpent, 0); ?></div>
+        <div class="stat-box-value total-spent">৳<?php echo number_format($totalSpent, 0); ?></div>
         <div class="stat-box-label">Total Spent</div>
       </div>
     </div>
@@ -287,7 +287,7 @@ foreach ($orders as $order) {
         $status = strtolower($order['status'] ?? 'pending');
         $statusClass = 'status-' . $status;
       ?>
-        <div class="order-card" data-status="<?php echo $status; ?>">
+        <div class="order-card" data-status="<?php echo $status; ?>" data-order-id="<?php echo $order['id']; ?>">
           <div class="order-card-header">
             <div>
               <span class="order-id">Order #<?php echo $order['id']; ?></span>
@@ -417,7 +417,157 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Start auto-refresh for real-time order status updates
+  startOrderAutoRefresh();
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REAL-TIME ORDER STATUS UPDATES
+   Auto-refresh orders every 10 seconds to show live status changes
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let lastOrdersHash = '';
+let refreshInterval = null;
+
+function startOrderAutoRefresh() {
+  // Initial hash
+  lastOrdersHash = generateOrdersHash();
+  
+  // Check for updates every 10 seconds
+  refreshInterval = setInterval(checkOrderUpdates, 10000);
+  
+  // Also check when tab becomes visible
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      checkOrderUpdates();
+    }
+  });
+}
+
+function generateOrdersHash() {
+  const orders = document.querySelectorAll('.order-card');
+  let hash = '';
+  orders.forEach(card => {
+    hash += card.dataset.orderId + ':' + card.dataset.status + ',';
+  });
+  return hash;
+}
+
+async function checkOrderUpdates() {
+  try {
+    const response = await fetch('api/get_user_orders.php', {
+      credentials: 'same-origin'
+    });
+    const result = await response.json();
+    
+    if (result.success && result.orders) {
+      updateOrdersUI(result.orders);
+      updateStatsUI(result.stats);
+    }
+  } catch (error) {
+    console.error('Order refresh error:', error);
+  }
+}
+
+function updateOrdersUI(orders) {
+  orders.forEach(order => {
+    const card = document.querySelector(`.order-card[data-order-id="${order.id}"]`);
+    if (card) {
+      const currentStatus = card.dataset.status;
+      const newStatus = (order.status || 'pending').toLowerCase();
+      
+      // If status changed, update the UI
+      if (currentStatus !== newStatus) {
+        card.dataset.status = newStatus;
+        
+        // Update status badge
+        const statusBadge = card.querySelector('.order-status');
+        if (statusBadge) {
+          statusBadge.className = 'order-status status-' + newStatus;
+          statusBadge.textContent = order.status;
+          
+          // Add animation
+          statusBadge.style.animation = 'none';
+          statusBadge.offsetHeight; // Trigger reflow
+          statusBadge.style.animation = 'statusPulse 0.5s ease';
+        }
+        
+        // Update cancel button visibility
+        const cancelBtn = card.querySelector('.cancel-order-btn');
+        const infoText = card.querySelector('.text-muted.small');
+        
+        if (newStatus === 'pending' && !cancelBtn) {
+          // Status changed back to pending - add cancel button
+          const btnContainer = card.querySelector('.mt-3.d-flex');
+          if (btnContainer && infoText) {
+            infoText.outerHTML = `
+              <button class="btn btn-outline-danger btn-sm cancel-order-btn" data-order-id="${order.id}">
+                <i class="bi bi-x-circle me-1"></i>Cancel Order
+              </button>
+            `;
+            // Re-attach event listener
+            const newBtn = btnContainer.querySelector('.cancel-order-btn');
+            if (newBtn) {
+              newBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to cancel this order?')) {
+                  cancelOrder(order.id, this);
+                }
+              });
+            }
+          }
+        } else if (newStatus !== 'pending' && cancelBtn) {
+          // Status changed from pending - remove cancel button
+          const statusText = newStatus === 'cancelled' 
+            ? '<span class="text-muted small"><i class="bi bi-info-circle me-1"></i>This order was cancelled</span>'
+            : `<span class="text-muted small"><i class="bi bi-lock me-1"></i>Order cannot be cancelled (${order.status})</span>`;
+          cancelBtn.outerHTML = statusText;
+        }
+        
+        // Show notification toast
+        showStatusUpdateToast(order.id, order.status);
+      }
+    }
+  });
+}
+
+function updateStatsUI(stats) {
+  const totalOrdersEl = document.querySelector('.stat-box-value.total-orders');
+  const totalSpentEl = document.querySelector('.stat-box-value.total-spent');
+  
+  if (totalOrdersEl && stats.total_orders !== undefined) {
+    totalOrdersEl.textContent = stats.total_orders;
+  }
+  if (totalSpentEl && stats.total_spent !== undefined) {
+    totalSpentEl.textContent = '৳' + parseFloat(stats.total_spent).toLocaleString();
+  }
+}
+
+function showStatusUpdateToast(orderId, newStatus) {
+  // Create toast container if not exists
+  let toastContainer = document.getElementById('orderToastContainer');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'orderToastContainer';
+    toastContainer.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999;';
+    document.body.appendChild(toastContainer);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = 'alert alert-success alert-dismissible fade show shadow';
+  toast.style.cssText = 'min-width: 280px; animation: slideIn 0.3s ease;';
+  toast.innerHTML = `
+    <strong><i class="bi bi-bell-fill me-2"></i>Order #${orderId}</strong><br>
+    Status updated to: <span class="badge bg-primary">${newStatus}</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  toastContainer.appendChild(toast);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    toast.remove();
+  }, 5000);
+}
 
 // Cancel Order Function
 async function cancelOrder(orderId, button) {

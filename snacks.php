@@ -62,7 +62,7 @@
                   <span class="badge bg-success price-badge">৳<?php echo $price; ?></span>
                 </div>
                 <?php if ($isStockout): ?>
-                  <button class="btn btn-secondary w-100 disabled" disabled>
+                  <button class="btn btn-secondary w-100 disabled order-btn" disabled data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>" data-item-image="<?php echo $image; ?>">
                     <i class="bi bi-x-circle me-1"></i>Out of Stock
                   </button>
                 <?php else: ?>

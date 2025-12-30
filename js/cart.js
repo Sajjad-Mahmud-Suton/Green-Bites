@@ -75,10 +75,21 @@ function removeFromCart(id) {
 }
 
 // Update item quantity
-function updateQuantity(id, delta) {
+async function updateQuantity(id, delta) {
   const item = cart.find(item => item.id === id);
   if (item) {
-    item.quantity += delta;
+    const newQuantity = item.quantity + delta;
+    
+    // If increasing quantity, check stock
+    if (delta > 0) {
+      const stockInfo = await checkItemStock(id);
+      if (stockInfo && newQuantity > stockInfo.quantity) {
+        showStockLimitToast(item.title, stockInfo.quantity);
+        return;
+      }
+    }
+    
+    item.quantity = newQuantity;
     if (item.quantity <= 0) {
       removeFromCart(id);
     } else {
@@ -88,11 +99,161 @@ function updateQuantity(id, delta) {
   }
 }
 
+// Show stock limit toast
+function showStockLimitToast(itemTitle, maxStock) {
+  const toastContainer = document.getElementById('cartToastContainer');
+  if (!toastContainer) {
+    alert(`Maximum available stock for "${itemTitle}" is ${maxStock}`);
+    return;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'cart-toast cart-toast-warning';
+  toast.innerHTML = `
+    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+    <span>Only <strong>${maxStock}</strong> of <strong>${itemTitle}</strong> available!</span>
+  `;
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // Clear entire cart
 function clearCart() {
   cart = [];
   saveCart();
   renderCartPanel();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STOCK VALIDATION FUNCTIONS
+   Validates cart items against available stock before checkout
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// Check stock for a single item
+async function checkItemStock(itemId) {
+  try {
+    const response = await fetch(`api/check_stock.php?id=${itemId}`);
+    const data = await response.json();
+    return data.success ? data : null;
+  } catch (e) {
+    console.error('Stock check error:', e);
+    return null;
+  }
+}
+
+// Validate entire cart against stock
+async function validateCartStock() {
+  if (cart.length === 0) return true;
+
+  try {
+    const response = await fetch('api/validate_cart.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart })
+    });
+
+    const result = await response.json();
+
+    if (!result.valid) {
+      // Show stock error modal
+      showStockErrorModal(result.items);
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    console.error('Cart validation error:', e);
+    alert('Could not verify stock availability. Please try again.');
+    return false;
+  }
+}
+
+// Show stock error modal
+function showStockErrorModal(items) {
+  const invalidItems = items.filter(item => !item.valid);
+  
+  let errorHtml = `
+    <div class="stock-error-modal">
+      <div class="alert alert-danger mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Some items have insufficient stock!</strong>
+      </div>
+      <div class="stock-error-list">
+  `;
+
+  invalidItems.forEach(item => {
+    errorHtml += `
+      <div class="stock-error-item d-flex justify-content-between align-items-center p-2 border-bottom">
+        <div>
+          <strong>${item.title}</strong>
+          <br><small class="text-muted">Requested: ${item.requested}</small>
+        </div>
+        <div class="text-end">
+          <span class="badge ${item.available > 0 ? 'bg-warning text-dark' : 'bg-danger'}">
+            ${item.message}
+          </span>
+        </div>
+      </div>
+    `;
+  });
+
+  errorHtml += `
+      </div>
+      <div class="mt-3 text-center">
+        <p class="text-muted small">Please adjust quantities in your cart or remove unavailable items.</p>
+      </div>
+    </div>
+  `;
+
+  // Create and show modal
+  let stockModal = document.getElementById('stockErrorModal');
+  if (!stockModal) {
+    stockModal = document.createElement('div');
+    stockModal.id = 'stockErrorModal';
+    stockModal.className = 'modal fade';
+    stockModal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Stock Unavailable</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="stockErrorContent"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" onclick="openCartPanel(); bootstrap.Modal.getInstance(document.getElementById('stockErrorModal')).hide();">
+              <i class="bi bi-cart me-2"></i>Edit Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(stockModal);
+  }
+
+  document.getElementById('stockErrorContent').innerHTML = errorHtml;
+  const bsModal = new bootstrap.Modal(stockModal);
+  bsModal.show();
+
+  // Auto-adjust cart quantities for items with partial stock
+  invalidItems.forEach(item => {
+    if (item.available > 0) {
+      const cartItem = cart.find(c => c.id == item.id);
+      if (cartItem) {
+        cartItem.maxStock = item.available;
+      }
+    }
+  });
+}
+
+// Get max available stock for an item (used when adding to cart)
+async function getMaxStock(itemId) {
+  const stockInfo = await checkItemStock(itemId);
+  return stockInfo ? stockInfo.quantity : 999;
 }
 
 // Check if user is logged in
@@ -170,7 +331,7 @@ function updateOrderTotal() {
 }
 
 // Add to cart from order popup
-function addToCartFromPopup() {
+async function addToCartFromPopup() {
   const modal = document.getElementById('orderItemModal');
   if (!modal) return;
 
@@ -180,17 +341,45 @@ function addToCartFromPopup() {
   const itemImage = modal.dataset.itemImage;
   const quantity = parseInt(document.getElementById('orderQuantity')?.value) || 1;
 
-  // Add item to cart with specified quantity
+  // Check stock before adding
+  const stockInfo = await checkItemStock(itemId);
+  if (!stockInfo) {
+    alert('Could not verify stock. Please try again.');
+    return;
+  }
+
+  if (!stockInfo.in_stock) {
+    alert(`Sorry, "${itemTitle}" is out of stock!`);
+    return;
+  }
+
+  // Calculate total quantity (existing in cart + new)
   const existingItem = cart.find(item => item.id === itemId);
+  const existingQty = existingItem ? existingItem.quantity : 0;
+  const totalQty = existingQty + quantity;
+
+  if (totalQty > stockInfo.quantity) {
+    const availableToAdd = stockInfo.quantity - existingQty;
+    if (availableToAdd <= 0) {
+      alert(`Sorry, you already have the maximum available quantity (${stockInfo.quantity}) of "${itemTitle}" in your cart.`);
+    } else {
+      alert(`Only ${availableToAdd} more of "${itemTitle}" can be added. Available stock: ${stockInfo.quantity}`);
+    }
+    return;
+  }
+
+  // Add item to cart with specified quantity
   if (existingItem) {
     existingItem.quantity += quantity;
+    existingItem.maxStock = stockInfo.quantity;
   } else {
     cart.push({
       id: itemId,
       title: itemTitle,
       price: itemPrice,
       image: itemImage,
-      quantity: quantity
+      quantity: quantity,
+      maxStock: stockInfo.quantity
     });
   }
   saveCart();
@@ -311,11 +500,17 @@ function closeCartPanel() {
 }
 
 // Open checkout modal
-function openCheckoutModal() {
+async function openCheckoutModal() {
   closeCartPanel();
   
   const modal = document.getElementById('checkoutModal');
   if (!modal) return;
+
+  // Validate cart stock before showing checkout
+  const stockValid = await validateCartStock();
+  if (!stockValid) {
+    return; // Don't open checkout if stock validation fails
+  }
 
   // Render order summary
   const summaryContainer = modal.querySelector('.checkout-items');
@@ -359,6 +554,23 @@ async function submitOrder() {
   // Disable button and show loading
   if (confirmBtn) {
     confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying stock...';
+  }
+
+  // Final stock validation before placing order
+  const stockValid = await validateCartStock();
+  if (!stockValid) {
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm Order';
+    }
+    // Close checkout modal to let user edit cart
+    const bsModal = bootstrap.Modal.getInstance(modal);
+    if (bsModal) bsModal.hide();
+    return;
+  }
+
+  if (confirmBtn) {
     confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Placing Order...';
   }
 
@@ -488,7 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Order quantity change handlers
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', async function(e) {
     const modal = document.getElementById('orderItemModal');
     if (!modal) return;
 
@@ -502,7 +714,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.target.closest('.order-qty-plus')) {
       const input = document.getElementById('orderQuantity');
       if (input) {
-        input.value = parseInt(input.value) + 1;
+        const itemId = modal.dataset.itemId;
+        const newQty = parseInt(input.value) + 1;
+        
+        // Check stock before increasing
+        const stockInfo = await checkItemStock(itemId);
+        if (stockInfo) {
+          // Consider existing cart quantity
+          const existingItem = cart.find(item => item.id === itemId);
+          const cartQty = existingItem ? existingItem.quantity : 0;
+          const totalQty = cartQty + newQty;
+          
+          if (totalQty > stockInfo.quantity) {
+            const maxCanAdd = stockInfo.quantity - cartQty;
+            showStockLimitToast(modal.dataset.itemTitle, maxCanAdd > 0 ? `You can add ${maxCanAdd} more` : 'Maximum in cart');
+            return;
+          }
+        }
+        
+        input.value = newQty;
         updateOrderTotal();
       }
     }
@@ -520,4 +750,162 @@ document.addEventListener('DOMContentLoaded', function() {
   if (quantityInput) {
     quantityInput.addEventListener('change', updateOrderTotal);
   }
+  
+  // Start stock auto-refresh for menu pages
+  startStockAutoRefresh();
 });
+
+// Stock Auto-Refresh for Menu Pages
+let stockRefreshInterval = null;
+
+function startStockAutoRefresh() {
+  // Only run on pages with menu cards
+  const menuCards = document.querySelectorAll('.menu-card');
+  if (menuCards.length === 0) return;
+  
+  // Get category ID from URL if available
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryId = urlParams.get('id');
+  
+  // Initial check after 20 seconds, then every 30 seconds
+  stockRefreshInterval = setInterval(() => {
+    refreshMenuStockStatus(categoryId);
+  }, 30000);
+}
+
+async function refreshMenuStockStatus(categoryId = null) {
+  try {
+    let url = 'api/get_menu_items.php';
+    if (categoryId) {
+      url += '?category_id=' + categoryId;
+    }
+    
+    const response = await fetch(url);
+    const result = await response.json();
+    
+    if (result.success && result.items) {
+      updateMenuCardsStock(result.items);
+    }
+  } catch (error) {
+    console.error('Error refreshing stock:', error);
+  }
+}
+
+function updateMenuCardsStock(items) {
+  items.forEach(item => {
+    // Find the card for this item (using data attribute or order button)
+    const orderBtn = document.querySelector(`[data-item-id="${item.id}"]`);
+    if (!orderBtn) return;
+    
+    const card = orderBtn.closest('.menu-card');
+    if (!card) return;
+    
+    const wasStockout = card.classList.contains('stockout-card');
+    const isNowStockout = item.is_stockout;
+    
+    // Update card classes
+    if (isNowStockout && !wasStockout) {
+      // Item became stockout
+      card.classList.add('stockout-card');
+      const img = card.querySelector('.card-img-top');
+      if (img) img.classList.add('stockout-image');
+      
+      // Update badge
+      updateStockBadge(card, 'stockout', 0);
+      
+      // Disable order button
+      orderBtn.disabled = true;
+      orderBtn.classList.remove('btn-success');
+      orderBtn.classList.add('btn-secondary');
+      orderBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Out of Stock';
+      
+      // Show notification
+      showStockUpdateToast(item.title, 'is now out of stock');
+      
+    } else if (!isNowStockout && wasStockout) {
+      // Item back in stock
+      card.classList.remove('stockout-card');
+      const img = card.querySelector('.card-img-top');
+      if (img) img.classList.remove('stockout-image');
+      
+      // Update badge
+      if (item.is_low_stock) {
+        updateStockBadge(card, 'low', item.quantity);
+      } else {
+        removeStockBadge(card);
+      }
+      
+      // Enable order button
+      orderBtn.disabled = false;
+      orderBtn.classList.remove('btn-secondary');
+      orderBtn.classList.add('btn-success');
+      orderBtn.innerHTML = '<i class="bi bi-cart-plus me-1"></i>Order Now';
+      
+      // Show notification
+      showStockUpdateToast(item.title, 'is back in stock!');
+      
+    } else if (item.is_low_stock) {
+      // Update low stock badge
+      updateStockBadge(card, 'low', item.quantity);
+    }
+  });
+}
+
+function updateStockBadge(card, type, quantity) {
+  let badge = card.querySelector('.stock-badge');
+  const imgContainer = card.querySelector('.position-relative');
+  
+  if (!imgContainer) return;
+  
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'stock-badge';
+    imgContainer.appendChild(badge);
+  }
+  
+  if (type === 'stockout') {
+    badge.className = 'stock-badge stockout-badge';
+    badge.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i>Stockout';
+  } else if (type === 'low') {
+    badge.className = 'stock-badge low-stock-badge';
+    badge.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Only ${quantity} left!`;
+  }
+}
+
+function removeStockBadge(card) {
+  const badge = card.querySelector('.stock-badge');
+  if (badge) badge.remove();
+}
+
+function showStockUpdateToast(itemName, message) {
+  // Create toast element if it doesn't exist
+  let toastContainer = document.getElementById('stockUpdateToastContainer');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'stockUpdateToastContainer';
+    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    toastContainer.style.zIndex = '1055';
+    document.body.appendChild(toastContainer);
+  }
+  
+  const toastId = 'toast-' + Date.now();
+  const toastHtml = `
+    <div id="${toastId}" class="toast align-items-center text-white bg-info border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>${itemName}</strong> ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `;
+  
+  toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+  
+  const toastEl = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+  toast.show();
+  
+  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}

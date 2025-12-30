@@ -109,7 +109,11 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="badge bg-success fs-6">৳<?php echo number_format($item['price'], 0); ?></span>
                             <?php if ($isStockout): ?>
-                            <button class="btn btn-secondary btn-sm disabled" disabled>
+                            <button class="btn btn-secondary btn-sm disabled order-btn" disabled
+                                    data-item-id="<?php echo $item['id']; ?>"
+                                    data-item-title="<?php echo htmlspecialchars($item['title']); ?>"
+                                    data-item-price="<?php echo $item['price']; ?>"
+                                    data-item-image="<?php echo htmlspecialchars($imgUrl); ?>">
                                 <i class="bi bi-x-circle me-1"></i>Out of Stock
                             </button>
                             <?php elseif ($isAvailable): ?>

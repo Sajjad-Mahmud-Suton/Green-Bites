@@ -282,6 +282,16 @@ $csrf_token = $_SESSION['csrf_token'];
     .stat-card:hover {
       transform: translateY(-3px);
     }
+    @keyframes statPulse {
+      0% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+      50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(34, 197, 94, 0.2); }
+      100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
     .stat-icon {
       width: 50px;
       height: 50px;
@@ -645,53 +655,47 @@ $csrf_token = $_SESSION['csrf_token'];
     <!-- Dashboard Section -->
     <div id="dashboard" class="section-tab active">
       <!-- Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card" id="stat-menu-items">
           <div class="stat-icon green"><i class="bi bi-egg-fried"></i></div>
           <div class="stat-value"><?php echo $stats['menu_items']; ?></div>
           <div class="stat-label">Menu Items</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="stat-total-orders">
           <div class="stat-icon blue"><i class="bi bi-bag-check"></i></div>
           <div class="stat-value"><?php echo $stats['total_orders']; ?></div>
           <div class="stat-label">Total Orders</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="stat-pending-orders">
           <div class="stat-icon orange"><i class="bi bi-clock-history"></i></div>
           <div class="stat-value"><?php echo $stats['pending_orders']; ?></div>
           <div class="stat-label">Pending Orders</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="stat-total-users">
           <div class="stat-icon purple"><i class="bi bi-people"></i></div>
           <div class="stat-value"><?php echo $stats['total_users']; ?></div>
           <div class="stat-label">Registered Users</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="stat-total-revenue">
           <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
           <div class="stat-value">৳<?php echo number_format($stats['total_revenue'], 0); ?></div>
           <div class="stat-label">Total Revenue</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="stat-today-orders">
           <div class="stat-icon blue"><i class="bi bi-calendar-check"></i></div>
           <div class="stat-value"><?php echo $stats['today_orders']; ?></div>
           <div class="stat-label">Today's Orders</div>
         </div>
-        <?php if ($stats['out_of_stock'] > 0 || $stats['low_stock'] > 0): ?>
-        <div class="stat-card" style="<?php echo $stats['out_of_stock'] > 0 ? 'border-left: 4px solid #ef4444;' : 'border-left: 4px solid #f59e0b;'; ?>">
+        <div class="stat-card" id="stat-stock-alerts" style="<?php echo $stats['out_of_stock'] > 0 ? 'border-left: 4px solid #ef4444;' : ($stats['low_stock'] > 0 ? 'border-left: 4px solid #f59e0b;' : 'display:none;'); ?>">
           <div class="stat-icon" style="<?php echo $stats['out_of_stock'] > 0 ? 'background: #fee2e2; color: #ef4444;' : 'background: #fef3c7; color: #f59e0b;'; ?>">
             <i class="bi bi-exclamation-triangle"></i>
           </div>
           <div class="stat-value"><?php echo $stats['out_of_stock'] + $stats['low_stock']; ?></div>
           <div class="stat-label">
-            <?php if ($stats['out_of_stock'] > 0): ?>
-              <span class="text-danger"><?php echo $stats['out_of_stock']; ?> Stockout</span>
-            <?php endif; ?>
-            <?php if ($stats['low_stock'] > 0): ?>
-              <span class="text-warning"><?php echo $stats['low_stock']; ?> Low Stock</span>
-            <?php endif; ?>
+            <span class="text-danger stockout-label"><?php echo $stats['out_of_stock'] > 0 ? $stats['out_of_stock'] . ' Stockout' : ''; ?></span>
+            <span class="text-warning lowstock-label"><?php echo $stats['low_stock'] > 0 ? $stats['low_stock'] . ' Low Stock' : ''; ?></span>
           </div>
         </div>
-        <?php endif; ?>
       </div>
 
       <!-- Recent Orders -->
@@ -881,6 +885,7 @@ $csrf_token = $_SESSION['csrf_token'];
                       <option value="Pending" <?php echo ($order['status'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
                       <option value="Processing" <?php echo ($order['status'] ?? '') == 'Processing' ? 'selected' : ''; ?>>Processing</option>
                       <option value="Completed" <?php echo ($order['status'] ?? '') == 'Completed' ? 'selected' : ''; ?>>Completed</option>
+                      <option value="Delivered" <?php echo ($order['status'] ?? '') == 'Delivered' ? 'selected' : ''; ?>>Delivered</option>
                       <option value="Cancelled" <?php echo ($order['status'] ?? '') == 'Cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                     </select>
                   </td>
@@ -1605,9 +1610,9 @@ if ('Notification' in window && Notification.permission === 'default') {
 }
 
 // Start checking for new complaints
-setInterval(checkNewComplaints, 30000); // Every 30 seconds
+setInterval(checkNewComplaints, 15000); // Every 15 seconds (faster)
 
-// Check for orders updates every 15 seconds
+// Check for orders updates every 8 seconds (faster for real-time feel)
 let lastOrdersData = JSON.stringify(ordersData);
 function checkOrdersUpdate() {
   fetch('api/get_orders.php', { credentials: 'same-origin' })
@@ -1618,6 +1623,9 @@ function checkOrdersUpdate() {
         if (newData !== lastOrdersData) {
           lastOrdersData = newData;
           refreshOrdersTable(result.orders);
+          
+          // Show notification for new orders
+          showAlert('📦 Orders updated!', 'info');
         }
       }
     })
@@ -1650,6 +1658,7 @@ function refreshOrdersTable(orders) {
             <option value="Pending" ${status == 'Pending' ? 'selected' : ''}>Pending</option>
             <option value="Processing" ${status == 'Processing' ? 'selected' : ''}>Processing</option>
             <option value="Completed" ${status == 'Completed' ? 'selected' : ''}>Completed</option>
+            <option value="Delivered" ${status == 'Delivered' ? 'selected' : ''}>Delivered</option>
             <option value="Cancelled" ${status == 'Cancelled' ? 'selected' : ''}>Cancelled</option>
           </select>
         </td>
@@ -1670,7 +1679,128 @@ function refreshOrdersTable(orders) {
   attachStatusListeners();
 }
 
-setInterval(checkOrdersUpdate, 15000); // Every 15 seconds
+setInterval(checkOrdersUpdate, 8000); // Every 8 seconds (faster)
+
+// Auto-refresh menu/stock data every 20 seconds
+function refreshMenuStock() {
+  fetch('api/get_menu.php', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success && result.items) {
+        updateMenuTable(result.items);
+      }
+    })
+    .catch(err => console.error('Menu refresh error:', err));
+}
+
+function updateMenuTable(items) {
+  const tbody = document.querySelector('#menuTable tbody');
+  if (!tbody) return;
+  
+  items.forEach(item => {
+    const row = tbody.querySelector(`tr[data-id="${item.id}"]`);
+    if (row) {
+      // Update quantity
+      const qtyCell = row.querySelector('.quantity-value');
+      if (qtyCell) {
+        const oldQty = parseInt(qtyCell.textContent);
+        const newQty = parseInt(item.quantity);
+        if (oldQty !== newQty) {
+          qtyCell.textContent = newQty;
+          qtyCell.style.animation = 'none';
+          qtyCell.offsetHeight;
+          qtyCell.style.animation = 'pulse 0.5s ease';
+          
+          // Update badge class
+          const badge = qtyCell.closest('.badge');
+          if (badge) {
+            badge.className = 'badge ' + (newQty <= 0 ? 'bg-danger' : (newQty <= 5 ? 'bg-warning text-dark' : 'bg-success'));
+          }
+        }
+      }
+    }
+  });
+}
+
+setInterval(refreshMenuStock, 20000); // Every 20 seconds
+
+// Dashboard Stats Auto-Refresh
+async function refreshDashboardStats() {
+  try {
+    const response = await fetch('api/get_stats.php');
+    const result = await response.json();
+    
+    if (result.success) {
+      const stats = result.stats;
+      
+      // Update Menu Items
+      updateStatCard('stat-menu-items', stats.menu_items);
+      
+      // Update Total Orders
+      updateStatCard('stat-total-orders', stats.total_orders);
+      
+      // Update Pending Orders
+      updateStatCard('stat-pending-orders', stats.pending_orders);
+      
+      // Update Total Users
+      updateStatCard('stat-total-users', stats.total_users);
+      
+      // Update Total Revenue
+      const revenueCard = document.querySelector('#stat-total-revenue .stat-value');
+      if (revenueCard) {
+        const newRevenue = '৳' + new Intl.NumberFormat('en-US').format(stats.total_revenue);
+        if (revenueCard.textContent !== newRevenue) {
+          revenueCard.textContent = newRevenue;
+          animateStatCard('stat-total-revenue');
+        }
+      }
+      
+      // Update Today's Orders
+      updateStatCard('stat-today-orders', stats.today_orders);
+      
+      // Update Stock Alerts
+      const stockCard = document.getElementById('stat-stock-alerts');
+      if (stockCard) {
+        const totalAlerts = stats.out_of_stock + stats.low_stock;
+        if (totalAlerts > 0) {
+          stockCard.style.display = '';
+          stockCard.style.borderLeft = stats.out_of_stock > 0 ? '4px solid #ef4444' : '4px solid #f59e0b';
+          stockCard.querySelector('.stat-icon').style.background = stats.out_of_stock > 0 ? '#fee2e2' : '#fef3c7';
+          stockCard.querySelector('.stat-icon').style.color = stats.out_of_stock > 0 ? '#ef4444' : '#f59e0b';
+          stockCard.querySelector('.stat-value').textContent = totalAlerts;
+          stockCard.querySelector('.stockout-label').textContent = stats.out_of_stock > 0 ? stats.out_of_stock + ' Stockout' : '';
+          stockCard.querySelector('.lowstock-label').textContent = stats.low_stock > 0 ? stats.low_stock + ' Low Stock' : '';
+        } else {
+          stockCard.style.display = 'none';
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error refreshing stats:', error);
+  }
+}
+
+function updateStatCard(cardId, newValue) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    const valueEl = card.querySelector('.stat-value');
+    if (valueEl && valueEl.textContent !== String(newValue)) {
+      valueEl.textContent = newValue;
+      animateStatCard(cardId);
+    }
+  }
+}
+
+function animateStatCard(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.style.animation = 'none';
+    card.offsetHeight;
+    card.style.animation = 'statPulse 0.5s ease';
+  }
+}
+
+setInterval(refreshDashboardStats, 15000); // Every 15 seconds
 
 // Navigation
 document.querySelectorAll('.nav-link[data-section]').forEach(link => {
@@ -1709,12 +1839,28 @@ function showAlert(message, type = 'success') {
   setTimeout(() => document.getElementById(alertId)?.remove(), 4000);
 }
 
-// Order Modal instance
-const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
+// Order Modal instance - will be initialized when DOM is ready
+let orderModal = null;
 let currentViewOrderId = null;
+
+// Initialize modal when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+  const orderModalEl = document.getElementById('orderModal');
+  if (orderModalEl) {
+    orderModal = new bootstrap.Modal(orderModalEl);
+  }
+});
 
 // View Order Details
 function viewOrder(orderId) {
+  // Initialize modal if not already done
+  if (!orderModal) {
+    const orderModalEl = document.getElementById('orderModal');
+    if (orderModalEl) {
+      orderModal = new bootstrap.Modal(orderModalEl);
+    }
+  }
+  
   currentViewOrderId = orderId;
   const order = ordersData.find(o => o.id == orderId);
   if (!order) {
@@ -2543,22 +2689,39 @@ function showAddCategoryModal() {
 
 // ==================== CAROUSEL SLIDE FUNCTIONS ====================
 
-const slideModal = new bootstrap.Modal(document.getElementById('slideModal'));
+let slideModal = null;
+
+// Initialize slide modal when needed
+function getSlideModal() {
+  if (!slideModal) {
+    const slideModalEl = document.getElementById('slideModal');
+    if (slideModalEl) {
+      slideModal = new bootstrap.Modal(slideModalEl);
+    }
+  }
+  return slideModal;
+}
 
 // Image Preview
-document.getElementById('slideImageUrl').addEventListener('input', function() {
-  const url = this.value.trim();
-  const previewDiv = document.getElementById('slideImagePreview');
-  const previewImg = document.getElementById('slidePreviewImg');
-  
-  if (url) {
-    previewImg.src = url;
-    previewDiv.style.display = 'block';
-    previewImg.onerror = () => { previewDiv.style.display = 'none'; };
-  } else {
-    previewDiv.style.display = 'none';
+document.addEventListener('DOMContentLoaded', function() {
+  const slideImageInput = document.getElementById('slideImageUrl');
+  if (slideImageInput) {
+    slideImageInput.addEventListener('input', function() {
+      const url = this.value.trim();
+      const previewDiv = document.getElementById('slideImagePreview');
+      const previewImg = document.getElementById('slidePreviewImg');
+      
+      if (url) {
+        previewImg.src = url;
+        previewDiv.style.display = 'block';
+        previewImg.onerror = () => { previewDiv.style.display = 'none'; };
+      } else {
+        previewDiv.style.display = 'none';
+      }
+    });
   }
 });
+
 
 // Show Add Slide Modal
 function showAddSlideModal() {
@@ -2570,7 +2733,7 @@ function showAddSlideModal() {
   document.getElementById('slideBtnLink').value = '#dealsSection';
   document.getElementById('slideSortOrder').value = '0';
   document.getElementById('slideImagePreview').style.display = 'none';
-  slideModal.show();
+  getSlideModal().show();
 }
 
 // Edit Slide
@@ -2600,7 +2763,7 @@ async function editSlide(id) {
         document.getElementById('slideImagePreview').style.display = 'block';
       }
       
-      slideModal.show();
+      getSlideModal().show();
     } else {
       showAlert(result.message || 'Failed to load slide', 'danger');
     }
@@ -2634,7 +2797,7 @@ document.getElementById('slideForm').addEventListener('submit', async function(e
     
     if (result.success) {
       showAlert(result.message || 'Slide saved successfully!');
-      slideModal.hide();
+      getSlideModal().hide();
       setTimeout(() => location.reload(), 1000);
     } else {
       showAlert(result.message || 'Failed to save slide', 'danger');

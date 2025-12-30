@@ -106,7 +106,51 @@ if ($total_price <= 0) {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SECTION 5: PRICE VERIFICATION (Security)
+   SECTION 5: STOCK VALIDATION (Server-side)
+   Verify all items have sufficient stock before proceeding
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+$stockErrors = [];
+foreach ($items as $item) {
+    $item_id = intval($item['id'] ?? 0);
+    $requested_qty = intval($item['quantity'] ?? 0);
+    
+    if ($item_id <= 0) continue;
+    
+    // Check current stock
+    $stockStmt = mysqli_prepare($conn, "SELECT title, quantity, is_available FROM menu_items WHERE id = ?");
+    mysqli_stmt_bind_param($stockStmt, 'i', $item_id);
+    mysqli_stmt_execute($stockStmt);
+    $stockResult = mysqli_stmt_get_result($stockStmt);
+    $menuItem = mysqli_fetch_assoc($stockResult);
+    mysqli_stmt_close($stockStmt);
+    
+    if (!$menuItem) {
+        $stockErrors[] = ($item['title'] ?? 'Item') . ' is no longer available';
+        continue;
+    }
+    
+    if ($menuItem['is_available'] != 1) {
+        $stockErrors[] = $menuItem['title'] . ' is currently unavailable';
+        continue;
+    }
+    
+    if ($menuItem['quantity'] < $requested_qty) {
+        if ($menuItem['quantity'] <= 0) {
+            $stockErrors[] = $menuItem['title'] . ' is out of stock';
+        } else {
+            $stockErrors[] = $menuItem['title'] . ': only ' . $menuItem['quantity'] . ' available';
+        }
+    }
+}
+
+if (!empty($stockErrors)) {
+    respond(false, 'Stock unavailable: ' . implode(', ', $stockErrors));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 6: PRICE VERIFICATION (Security)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 $calculated_total = 0;
@@ -159,6 +203,24 @@ try {
     mysqli_stmt_bind_param($updateStmt, 'si', $bill_number, $order_id);
     mysqli_stmt_execute($updateStmt);
     mysqli_stmt_close($updateStmt);
+
+    /* ═══════════════════════════════════════════════════════════════════════════
+       SECTION 8: UPDATE STOCK QUANTITY
+       Decrease quantity for each ordered item in menu_items table
+       ═══════════════════════════════════════════════════════════════════════════ */
+    
+    foreach ($items as $item) {
+        $item_id = intval($item['id'] ?? 0);
+        $ordered_qty = intval($item['quantity'] ?? 0);
+        
+        if ($item_id > 0 && $ordered_qty > 0) {
+            // Decrease quantity (but don't go below 0)
+            $updateQtyStmt = mysqli_prepare($conn, "UPDATE menu_items SET quantity = GREATEST(0, quantity - ?) WHERE id = ?");
+            mysqli_stmt_bind_param($updateQtyStmt, 'ii', $ordered_qty, $item_id);
+            mysqli_stmt_execute($updateQtyStmt);
+            mysqli_stmt_close($updateQtyStmt);
+        }
+    }
 
     respond(true, 'Order placed successfully!', [
         'order_id' => $order_id,
