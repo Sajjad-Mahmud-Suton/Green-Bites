@@ -1,26 +1,4 @@
 <?php
-/**
- * ╔═══════════════════════════════════════════════════════════════════════════╗
- * ║                         GREEN BITES - MAIN PAGE                           ║
- * ╠═══════════════════════════════════════════════════════════════════════════╣
- * ║  Description : Main landing page for Green Bites Canteen System           ║
- * ║  Author      : Green Bites Development Team                               ║
- * ║  Version     : 1.0.0                                                       ║
- * ║  Last Update : December 2025                                               ║
- * ╠═══════════════════════════════════════════════════════════════════════════╣
- * ║  SECTIONS:                                                                 ║
- * ║  ├── 1. Session & Security Setup                                          ║
- * ║  ├── 2. Hero Carousel Section                                             ║
- * ║  ├── 3. Food Categories Section                                           ║
- * ║  ├── 4. Menu Items Display                                                ║
- * ║  ├── 5. Cart & Checkout Modal                                             ║
- * ║  └── 6. Footer & Scripts                                                  ║
- * ╚═══════════════════════════════════════════════════════════════════════════╝
- */
-
-// ╔═══════════════════════════════════════════════════════════════════════════╗
-// ║                     SECTION 1: SESSION & SECURITY                         ║
-// ╚═══════════════════════════════════════════════════════════════════════════╝
 
 require_once __DIR__ . '/config/security.php';
 initSecureSession();
@@ -195,16 +173,36 @@ if (isset($_SESSION['user_id'])) {
             $price = number_format($row['price'], 0);
             $image = htmlspecialchars($row['image_url']);
             $description = htmlspecialchars($row['description'] ?? '');
+            $quantity = intval($row['quantity'] ?? 0);
+            $isStockout = ($quantity == 0);
+            $isLowStock = ($quantity > 0 && $quantity <= 5);
             ?>
             <div class="col">
-              <div class="card shadow menu-card border-success h-100">
-                <img src="<?php echo $image; ?>" class="card-img-top" style="height:140px;object-fit:cover;" alt="<?php echo $title; ?>">
+              <div class="card shadow menu-card border-success h-100 <?php echo $isStockout ? 'stockout-card' : ''; ?>">
+                <div class="position-relative">
+                  <img src="<?php echo $image; ?>" class="card-img-top <?php echo $isStockout ? 'stockout-image' : ''; ?>" style="height:140px;object-fit:cover;" alt="<?php echo $title; ?>">
+                  <?php if ($isStockout): ?>
+                    <div class="stock-badge stockout-badge">
+                      <i class="bi bi-x-circle-fill me-1"></i>Stockout
+                    </div>
+                  <?php elseif ($isLowStock): ?>
+                    <div class="stock-badge low-stock-badge">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i>Only <?php echo $quantity; ?> left!
+                    </div>
+                  <?php endif; ?>
+                </div>
                 <div class="card-body">
                   <div class="card-title-price">
                     <h5 class="card-title"><?php echo $title; ?></h5>
                     <span class="badge bg-success price-badge">৳<?php echo $price; ?></span>
                   </div>
-                  <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>">Order</button>
+                  <?php if ($isStockout): ?>
+                    <button class="btn btn-secondary w-100 disabled" disabled>
+                      <i class="bi bi-x-circle me-1"></i>Out of Stock
+                    </button>
+                  <?php else: ?>
+                    <button class="btn btn-success w-100 order-btn" data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $price; ?>">Order</button>
+                  <?php endif; ?>
                 </div>
               </div>
             </div>

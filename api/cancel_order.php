@@ -1,12 +1,5 @@
 <?php
-/**
- * ╔═══════════════════════════════════════════════════════════════════════════╗
- * ║                         CANCEL ORDER API                                  ║
- * ╠═══════════════════════════════════════════════════════════════════════════╣
- * ║  Allows users to cancel their pending orders                              ║
- * ║  Only works for orders with status = 'pending'                            ║
- * ╚═══════════════════════════════════════════════════════════════════════════╝
- */
+
 
 session_start();
 header('Content-Type: application/json');

@@ -28,7 +28,7 @@ if (!$category) {
 }
 
 // Fetch menu items for this category
-$itemsStmt = mysqli_prepare($conn, "SELECT id, title, price, image_url, description, is_available FROM menu_items WHERE category_id = ? ORDER BY title ASC");
+$itemsStmt = mysqli_prepare($conn, "SELECT id, title, price, image_url, description, is_available, quantity FROM menu_items WHERE category_id = ? ORDER BY title ASC");
 mysqli_stmt_bind_param($itemsStmt, 'i', $categoryId);
 mysqli_stmt_execute($itemsStmt);
 $itemsResult = mysqli_stmt_get_result($itemsStmt);
@@ -83,10 +83,24 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
             <?php foreach ($menuItems as $item): 
                 $imgUrl = $item['image_url'] ?: 'images/placeholder.jpg';
                 $isAvailable = $item['is_available'] ?? 1;
+                $quantity = intval($item['quantity'] ?? 0);
+                $isStockout = ($quantity == 0);
+                $isLowStock = ($quantity > 0 && $quantity <= 5);
             ?>
             <div class="col">
-                <div class="card h-100 shadow-sm menu-card <?php echo !$isAvailable ? 'opacity-50' : ''; ?>">
-                    <img src="<?php echo htmlspecialchars($imgUrl); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($item['title']); ?>" style="height: 180px; object-fit: cover;">
+                <div class="card h-100 shadow-sm menu-card <?php echo $isStockout ? 'stockout-card' : (!$isAvailable ? 'opacity-50' : ''); ?>">
+                    <div class="position-relative">
+                        <img src="<?php echo htmlspecialchars($imgUrl); ?>" class="card-img-top <?php echo $isStockout ? 'stockout-image' : ''; ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" style="height: 180px; object-fit: cover;">
+                        <?php if ($isStockout): ?>
+                            <div class="stock-badge stockout-badge">
+                                <i class="bi bi-x-circle-fill me-1"></i>Stockout
+                            </div>
+                        <?php elseif ($isLowStock): ?>
+                            <div class="stock-badge low-stock-badge">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Only <?php echo $quantity; ?> left!
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($item['title']); ?></h5>
                         <?php if ($item['description']): ?>
@@ -94,7 +108,11 @@ $categoryDesc = htmlspecialchars($category['description'] ?? '');
                         <?php endif; ?>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="badge bg-success fs-6">৳<?php echo number_format($item['price'], 0); ?></span>
-                            <?php if ($isAvailable): ?>
+                            <?php if ($isStockout): ?>
+                            <button class="btn btn-secondary btn-sm disabled" disabled>
+                                <i class="bi bi-x-circle me-1"></i>Out of Stock
+                            </button>
+                            <?php elseif ($isAvailable): ?>
                             <button class="btn btn-outline-success btn-sm order-btn" 
                                     data-item-id="<?php echo $item['id']; ?>"
                                     data-item-title="<?php echo htmlspecialchars($item['title']); ?>"

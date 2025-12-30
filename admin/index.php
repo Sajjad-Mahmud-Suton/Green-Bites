@@ -85,6 +85,14 @@ $stats['new_complaints'] = mysqli_fetch_assoc($result)['count'];
 $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM complaints");
 $stats['total_complaints'] = mysqli_fetch_assoc($result)['count'];
 
+// Low stock items (quantity <= 5)
+$result = mysqli_query($conn, "SELECT COUNT(*) as count FROM menu_items WHERE quantity <= 5 AND quantity > 0");
+$stats['low_stock'] = mysqli_fetch_assoc($result)['count'];
+
+// Out of stock items (quantity = 0)
+$result = mysqli_query($conn, "SELECT COUNT(*) as count FROM menu_items WHERE quantity = 0");
+$stats['out_of_stock'] = mysqli_fetch_assoc($result)['count'];
+
 // Get categories
 $categories = [];
 $catResult = mysqli_query($conn, "SELECT * FROM categories ORDER BY name");
@@ -567,7 +575,13 @@ $csrf_token = $_SESSION['csrf_token'];
     <a href="#" class="nav-link" data-section="menu">
       <i class="bi bi-egg-fried"></i>
       Menu Items
-      <span class="badge bg-success"><?php echo $stats['menu_items']; ?></span>
+      <?php if ($stats['out_of_stock'] > 0): ?>
+        <span class="badge bg-danger" title="<?php echo $stats['out_of_stock']; ?> out of stock"><?php echo $stats['out_of_stock']; ?> OOS</span>
+      <?php elseif ($stats['low_stock'] > 0): ?>
+        <span class="badge bg-warning text-dark" title="<?php echo $stats['low_stock']; ?> low stock"><?php echo $stats['low_stock']; ?> Low</span>
+      <?php else: ?>
+        <span class="badge bg-success"><?php echo $stats['menu_items']; ?></span>
+      <?php endif; ?>
     </a>
     <a href="#" class="nav-link" data-section="orders">
       <i class="bi bi-bag-check"></i>
@@ -662,6 +676,22 @@ $csrf_token = $_SESSION['csrf_token'];
           <div class="stat-value"><?php echo $stats['today_orders']; ?></div>
           <div class="stat-label">Today's Orders</div>
         </div>
+        <?php if ($stats['out_of_stock'] > 0 || $stats['low_stock'] > 0): ?>
+        <div class="stat-card" style="<?php echo $stats['out_of_stock'] > 0 ? 'border-left: 4px solid #ef4444;' : 'border-left: 4px solid #f59e0b;'; ?>">
+          <div class="stat-icon" style="<?php echo $stats['out_of_stock'] > 0 ? 'background: #fee2e2; color: #ef4444;' : 'background: #fef3c7; color: #f59e0b;'; ?>">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <div class="stat-value"><?php echo $stats['out_of_stock'] + $stats['low_stock']; ?></div>
+          <div class="stat-label">
+            <?php if ($stats['out_of_stock'] > 0): ?>
+              <span class="text-danger"><?php echo $stats['out_of_stock']; ?> Stockout</span>
+            <?php endif; ?>
+            <?php if ($stats['low_stock'] > 0): ?>
+              <span class="text-warning"><?php echo $stats['low_stock']; ?> Low Stock</span>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Recent Orders -->
@@ -742,6 +772,7 @@ $csrf_token = $_SESSION['csrf_token'];
                   <th>Name</th>
                   <th>Category</th>
                   <th>Price</th>
+                  <th>Stock</th>
                   <th>Description</th>
                   <th>Actions</th>
                 </tr>
@@ -756,6 +787,25 @@ $csrf_token = $_SESSION['csrf_token'];
                   <td><strong><?php echo htmlspecialchars($item['title']); ?></strong></td>
                   <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                   <td><strong>৳<?php echo number_format($item['price'], 0); ?></strong></td>
+                  <td>
+                    <?php 
+                    $qty = $item['quantity'] ?? 0;
+                    if ($qty == 0): ?>
+                      <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Stockout</span>
+                    <?php elseif ($qty <= 5): ?>
+                      <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i><?php echo $qty; ?> left</span>
+                    <?php else: ?>
+                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i><?php echo $qty; ?> in stock</span>
+                    <?php endif; ?>
+                    <div class="btn-group btn-group-sm mt-1" role="group">
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="updateQuantity(<?php echo $item['id']; ?>, -1)" title="Decrease">
+                        <i class="bi bi-dash"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-success btn-sm" onclick="updateQuantity(<?php echo $item['id']; ?>, 1)" title="Increase">
+                        <i class="bi bi-plus"></i>
+                      </button>
+                    </div>
+                  </td>
                   <td class="text-muted"><?php echo htmlspecialchars(substr($item['description'] ?? '', 0, 50)); ?>...</td>
                   <td>
                     <button class="btn-action edit" onclick="editMenuItem(<?php echo $item['id']; ?>)" title="Edit">
@@ -1326,11 +1376,16 @@ $csrf_token = $_SESSION['csrf_token'];
             </div>
           </div>
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label class="form-label">Price (৳) <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="price" id="menuPrice" min="0" step="0.01" required>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantity" id="menuQuantity" min="0" value="10" required>
+              <small class="text-muted">Available stock count</small>
+            </div>
+            <div class="col-md-4 mb-3">
               <label class="form-label">Image URL</label>
               <input type="url" class="form-control" name="image_url" id="menuImage" placeholder="https://...">
             </div>
@@ -1905,6 +1960,7 @@ function editMenuItem(id) {
   document.getElementById('menuName').value = item.title;
   document.getElementById('menuCategory').value = item.category_id;
   document.getElementById('menuPrice').value = item.price;
+  document.getElementById('menuQuantity').value = item.quantity || 0;
   document.getElementById('menuImage').value = item.image_url || '';
   document.getElementById('menuDescription').value = item.description || '';
   
@@ -1961,6 +2017,26 @@ function deleteMenuItem(id, name) {
       document.querySelector(`tr[data-id="${id}"]`)?.remove();
     } else {
       showAlert(result.message || 'Failed to delete.', 'danger');
+    }
+  })
+  .catch(() => showAlert('Network error.', 'danger'));
+}
+
+// Update Quantity Function (Quick +/- buttons)
+function updateQuantity(itemId, change) {
+  fetch('api/update_quantity.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: itemId, change: change, csrf_token: csrfToken }),
+    credentials: 'same-origin'
+  })
+  .then(r => r.json())
+  .then(result => {
+    if (result.success) {
+      showAlert(result.message || 'Quantity updated!');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      showAlert(result.message || 'Failed to update quantity.', 'danger');
     }
   })
   .catch(() => showAlert('Network error.', 'danger'));
