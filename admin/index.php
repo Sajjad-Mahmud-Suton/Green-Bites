@@ -1028,6 +1028,9 @@ $csrf_token = $_SESSION['csrf_token'];
             </div>
           </div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-outline-danger me-auto" onclick="deleteComplaintFromModal()">
+              <i class="bi bi-trash me-1"></i>Delete Complaint
+            </button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-success" onclick="saveComplaintResponse()">
               <i class="bi bi-check-lg me-1"></i>Save Changes
@@ -2374,6 +2377,9 @@ async function loadComplaints() {
                 <i class="bi bi-eye"></i>
               </button>
               ${isUnseen ? `<button class="btn btn-sm btn-outline-success ms-1" onclick="markComplaintSeen(${c.id})"><i class="bi bi-check"></i></button>` : ''}
+              <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteComplaint(${c.id})" title="Delete Complaint">
+                <i class="bi bi-trash"></i>
+              </button>
             </td>
           </tr>
         `;
@@ -2494,6 +2500,68 @@ async function markAllComplaintsSeen() {
     }
   } catch (err) {
     console.error(err);
+  }
+}
+
+// Delete complaint
+async function deleteComplaint(id) {
+  if (!confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('id', id);
+    
+    const response = await fetch('api/delete_complaint.php', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      loadComplaints(); // Reload table
+      showAlert('Complaint deleted successfully', 'success');
+    } else {
+      showAlert(result.message || 'Failed to delete complaint', 'danger');
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert('Error deleting complaint', 'danger');
+  }
+}
+
+// Delete complaint from modal
+async function deleteComplaintFromModal() {
+  const id = document.getElementById('complaintId').value;
+  if (!id) return;
+  
+  if (!confirm('Are you sure you want to delete this complaint? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('id', id);
+    
+    const response = await fetch('api/delete_complaint.php', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide();
+      loadComplaints(); // Reload table
+      showAlert('Complaint deleted successfully', 'success');
+    } else {
+      showAlert(result.message || 'Failed to delete complaint', 'danger');
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert('Error deleting complaint', 'danger');
   }
 }
 
