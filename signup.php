@@ -148,6 +148,27 @@ $csrf_token = generateCSRFToken();
             margin-right: 0.5rem;
             font-size: 1.1rem;
         }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            z-index: 10;
+        }
+        .password-toggle:hover {
+            color: #22c55e;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper .form-control {
+            padding-right: 40px;
+        }
         @media (max-width: 576px) {
             .auth-card {
                 margin: 0 1rem;
@@ -214,7 +235,12 @@ $csrf_token = generateCSRFToken();
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-lock text-success"></i>
                         </span>
-                        <input type="password" class="form-control border-start-0" id="password" name="password" placeholder="Create a strong password" required minlength="8">
+                        <div class="password-wrapper flex-grow-1">
+                            <input type="password" class="form-control border-start-0" id="password" name="password" placeholder="Create a strong password" required minlength="8">
+                            <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mt-2 password-strength">
                         <div class="password-strength-bar" id="passwordStrengthBar"></div>
@@ -228,7 +254,12 @@ $csrf_token = generateCSRFToken();
                         <span class="input-group-text bg-transparent border-end-0">
                             <i class="bi bi-lock-fill text-success"></i>
                         </span>
-                        <input type="password" class="form-control border-start-0" id="confirm_password" name="confirm_password" placeholder="Repeat your password" required minlength="8">
+                        <div class="password-wrapper flex-grow-1">
+                            <input type="password" class="form-control border-start-0" id="confirm_password" name="confirm_password" placeholder="Repeat your password" required minlength="8">
+                            <button type="button" class="password-toggle" onclick="togglePassword('confirm_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -253,6 +284,21 @@ $csrf_token = generateCSRFToken();
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  // Password toggle function
+  function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('bi-eye');
+      icon.classList.add('bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('bi-eye-slash');
+      icon.classList.add('bi-eye');
+    }
+  }
+
   const signupForm = document.getElementById('signupForm');
   const signupBtn = document.getElementById('signupBtn');
   const alertPlaceholder = document.getElementById('alertPlaceholder');
