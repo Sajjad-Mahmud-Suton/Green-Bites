@@ -169,6 +169,14 @@ $csrf_token = generateCSRFToken();
         .password-wrapper .form-control {
             padding-right: 40px;
         }
+        .otp-input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
+        }
+        .otp-input.filled {
+            background-color: #f0fdf4;
+            border-color: #22c55e;
+        }
         @media (max-width: 576px) {
             .auth-card {
                 margin: 0 1rem;
@@ -264,10 +272,10 @@ $csrf_token = generateCSRFToken();
                 </div>
 
                 <button type="submit" class="btn btn-auth w-100" id="signupBtn">
-                    <span class="btn-text">Sign Up</span>
+                    <span class="btn-text"><i class="bi bi-envelope-arrow-up me-2"></i>Sign Up & Verify Email</span>
                     <span class="btn-spinner d-none">
                         <span class="spinner-border spinner-border-sm me-1"></span>
-                        Creating account...
+                        Sending verification code...
                     </span>
                 </button>
             </form>
@@ -279,6 +287,59 @@ $csrf_token = generateCSRFToken();
         </div>
     </div>
     </div>
+
+<!-- OTP Verification Modal -->
+<div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none;">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #22c55e, #16a34a); border: none;">
+        <h5 class="modal-title"><i class="bi bi-envelope-check me-2"></i>Verify Your Email</h5>
+      </div>
+      <div class="modal-body text-center p-4">
+        <div class="mb-3">
+          <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #22c55e20, #16a34a20); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <i class="bi bi-envelope-paper text-success" style="font-size: 2.5rem;"></i>
+          </div>
+        </div>
+        <h5 class="mb-2">Check Your Email</h5>
+        <p class="text-muted mb-4">We've sent a 6-digit verification code to<br><strong id="otpEmailDisplay"></strong></p>
+        
+        <div id="otpAlertPlaceholder"></div>
+        
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Enter Verification Code</label>
+          <div class="d-flex justify-content-center gap-2" id="otpInputContainer">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="0">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="1">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="2">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="3">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="4">
+            <input type="text" class="form-control otp-input text-center" maxlength="1" style="width: 50px; height: 55px; font-size: 1.5rem; font-weight: 600; border-radius: 12px;" data-index="5">
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <p class="text-muted small mb-2">Code expires in <span id="otpTimer" class="fw-bold text-success">10:00</span></p>
+          <button type="button" class="btn btn-link text-success p-0" id="resendOtpBtn" disabled onclick="resendOTP()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+          </button>
+        </div>
+        
+        <button type="button" class="btn btn-auth w-100" id="verifyOtpBtn" onclick="verifyOTP()">
+          <span class="btn-text"><i class="bi bi-check-circle me-2"></i>Verify & Create Account</span>
+          <span class="btn-spinner d-none">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Verifying...
+          </span>
+        </button>
+        
+        <button type="button" class="btn btn-link text-muted mt-3" onclick="closeOtpModal()">
+          <i class="bi bi-arrow-left me-1"></i>Go Back & Edit Details
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php include 'includes/footer.php'; ?>
 
@@ -438,11 +499,21 @@ $csrf_token = generateCSRFToken();
       return;
     }
 
+    // Password strength check
+    if (password.length < 8) {
+      showAlert('Password must be at least 8 characters.');
+      return;
+    }
+
     setLoading(true);
 
-    const formData = new FormData(signupForm);
+    // Send OTP to email
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('full_name', fullName);
+    formData.append('username', username);
 
-    fetch('auth/register.php', {
+    fetch('auth/send_otp.php', {
       method: 'POST',
       credentials: 'same-origin',
       body: formData
@@ -450,12 +521,10 @@ $csrf_token = generateCSRFToken();
       .then(res => res.json())
       .then(json => {
         if (json.success) {
-          showToast(json.message || 'Account created successfully.', 'success');
-          setTimeout(() => {
-            window.location.href = json.redirect || 'login.php';
-          }, 900);
+          // Show OTP modal
+          showOtpModal(email);
         } else {
-          showAlert(json.message || 'Unable to create account. Please try again.');
+          showAlert(json.message || 'Failed to send verification code.');
         }
       })
       .catch(() => {
@@ -464,6 +533,227 @@ $csrf_token = generateCSRFToken();
       .finally(() => {
         setLoading(false);
       });
+  });
+
+  // OTP Modal Functions
+  let otpModal = null;
+  let otpTimerInterval = null;
+  let otpTimeLeft = 120; // 2 minutes in seconds
+
+  function showOtpModal(email) {
+    document.getElementById('otpEmailDisplay').textContent = email;
+    clearOtpInputs();
+    startOtpTimer();
+    
+    otpModal = new bootstrap.Modal(document.getElementById('otpModal'));
+    otpModal.show();
+    
+    // Focus first input
+    setTimeout(() => {
+      document.querySelector('.otp-input[data-index="0"]').focus();
+    }, 300);
+  }
+
+  function closeOtpModal() {
+    if (otpModal) {
+      otpModal.hide();
+    }
+    clearInterval(otpTimerInterval);
+  }
+
+  function clearOtpInputs() {
+    document.querySelectorAll('.otp-input').forEach(input => {
+      input.value = '';
+      input.classList.remove('filled');
+    });
+    document.getElementById('otpAlertPlaceholder').innerHTML = '';
+  }
+
+  function startOtpTimer() {
+    otpTimeLeft = 120;
+    document.getElementById('resendOtpBtn').disabled = true;
+    
+    clearInterval(otpTimerInterval);
+    otpTimerInterval = setInterval(() => {
+      otpTimeLeft--;
+      const minutes = Math.floor(otpTimeLeft / 60);
+      const seconds = otpTimeLeft % 60;
+      document.getElementById('otpTimer').textContent = 
+        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      if (otpTimeLeft <= 0) {
+        clearInterval(otpTimerInterval);
+        document.getElementById('otpTimer').textContent = 'Expired';
+        document.getElementById('otpTimer').classList.remove('text-success');
+        document.getElementById('otpTimer').classList.add('text-danger');
+        document.getElementById('resendOtpBtn').disabled = false;
+      }
+    }, 1000);
+  }
+
+  function resendOTP() {
+    const email = signupForm.email.value.trim();
+    const fullName = signupForm.full_name.value.trim();
+    
+    document.getElementById('resendOtpBtn').disabled = true;
+    document.getElementById('resendOtpBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+    
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('full_name', fullName);
+    
+    fetch('auth/send_otp.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          showOtpAlert('New code sent successfully!', 'success');
+          clearOtpInputs();
+          startOtpTimer();
+          document.getElementById('otpTimer').classList.remove('text-danger');
+          document.getElementById('otpTimer').classList.add('text-success');
+        } else {
+          showOtpAlert(json.message || 'Failed to resend code.', 'danger');
+          document.getElementById('resendOtpBtn').disabled = false;
+        }
+      })
+      .catch(() => {
+        showOtpAlert('Network error. Please try again.', 'danger');
+        document.getElementById('resendOtpBtn').disabled = false;
+      })
+      .finally(() => {
+        document.getElementById('resendOtpBtn').innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Resend Code';
+      });
+  }
+
+  function showOtpAlert(message, type) {
+    document.getElementById('otpAlertPlaceholder').innerHTML = `
+      <div class="alert alert-${type} py-2 rounded-pill" role="alert">
+        <small>${message}</small>
+      </div>
+    `;
+  }
+
+  function getOtpValue() {
+    let otp = '';
+    document.querySelectorAll('.otp-input').forEach(input => {
+      otp += input.value;
+    });
+    return otp;
+  }
+
+  function verifyOTP() {
+    const otp = getOtpValue();
+    
+    if (otp.length !== 6) {
+      showOtpAlert('Please enter the complete 6-digit code.', 'danger');
+      return;
+    }
+    
+    const verifyBtn = document.getElementById('verifyOtpBtn');
+    const btnText = verifyBtn.querySelector('.btn-text');
+    const btnSpinner = verifyBtn.querySelector('.btn-spinner');
+    
+    verifyBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnSpinner.classList.remove('d-none');
+    
+    const formData = new FormData();
+    formData.append('otp', otp);
+    formData.append('full_name', signupForm.full_name.value.trim());
+    formData.append('username', signupForm.username.value.trim());
+    formData.append('email', signupForm.email.value.trim());
+    formData.append('password', signupForm.password.value);
+    
+    fetch('auth/verify_otp.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          showOtpAlert('✅ ' + json.message, 'success');
+          setTimeout(() => {
+            window.location.href = json.redirect || 'login.php';
+          }, 1500);
+        } else {
+          showOtpAlert(json.message || 'Invalid verification code.', 'danger');
+          verifyBtn.disabled = false;
+          btnText.classList.remove('d-none');
+          btnSpinner.classList.add('d-none');
+        }
+      })
+      .catch(() => {
+        showOtpAlert('Network error. Please try again.', 'danger');
+        verifyBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+      });
+  }
+
+  // OTP Input Handlers
+  document.querySelectorAll('.otp-input').forEach((input, index) => {
+    input.addEventListener('input', function(e) {
+      const value = e.target.value;
+      
+      // Only allow numbers
+      e.target.value = value.replace(/[^0-9]/g, '');
+      
+      if (e.target.value) {
+        e.target.classList.add('filled');
+        // Move to next input
+        const nextInput = document.querySelector(`.otp-input[data-index="${index + 1}"]`);
+        if (nextInput) {
+          nextInput.focus();
+        }
+      } else {
+        e.target.classList.remove('filled');
+      }
+      
+      // Auto-verify when all fields are filled
+      if (getOtpValue().length === 6) {
+        verifyOTP();
+      }
+    });
+    
+    input.addEventListener('keydown', function(e) {
+      // Handle backspace
+      if (e.key === 'Backspace' && !e.target.value) {
+        const prevInput = document.querySelector(`.otp-input[data-index="${index - 1}"]`);
+        if (prevInput) {
+          prevInput.focus();
+          prevInput.value = '';
+          prevInput.classList.remove('filled');
+        }
+      }
+    });
+    
+    // Handle paste
+    input.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+      const digits = pastedData.replace(/[^0-9]/g, '').substring(0, 6);
+      
+      digits.split('').forEach((digit, i) => {
+        const targetInput = document.querySelector(`.otp-input[data-index="${i}"]`);
+        if (targetInput) {
+          targetInput.value = digit;
+          targetInput.classList.add('filled');
+        }
+      });
+      
+      // Focus last filled or next empty
+      const nextEmpty = document.querySelector('.otp-input:not(.filled)');
+      if (nextEmpty) {
+        nextEmpty.focus();
+      } else if (digits.length === 6) {
+        verifyOTP();
+      }
+    });
   });
 </script>
 </body>
