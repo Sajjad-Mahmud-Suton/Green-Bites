@@ -346,13 +346,20 @@ foreach ($orders as $order) {
                       data-student-id="<?php echo htmlspecialchars($order['student_id'] ?? ''); ?>"
                       data-instructions="<?php echo htmlspecialchars($order['special_instructions'] ?? ''); ?>"
                       data-user-name="<?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Customer'); ?>"
-                      data-user-email="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>">
+                      data-user-email="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>"
+                      data-payment-method="<?php echo htmlspecialchars($order['payment_method'] ?? 'Pay at Counter'); ?>">
                 <i class="bi bi-download me-1"></i>Download Bill (PDF)
               </button>
             </div>
 
-            <?php if (!empty($order['student_id']) || !empty($order['special_instructions'])): ?>
+            <?php if (!empty($order['student_id']) || !empty($order['special_instructions']) || !empty($order['payment_method'])): ?>
               <div class="order-details">
+                <?php if (!empty($order['payment_method'])): ?>
+                  <div class="mb-2">
+                    <span class="order-details-label"><i class="bi bi-credit-card me-1"></i>Payment:</span>
+                    <span class="order-details-value badge bg-info"><?php echo htmlspecialchars($order['payment_method']); ?></span>
+                  </div>
+                <?php endif; ?>
                 <?php if (!empty($order['student_id'])): ?>
                   <div class="mb-2">
                     <span class="order-details-label"><i class="bi bi-person-badge me-1"></i>Student ID:</span>
@@ -630,6 +637,7 @@ function generateOrderPDF(button) {
   const instructions = button.dataset.instructions;
   const userName = button.dataset.userName;
   const userEmail = button.dataset.userEmail;
+  const paymentMethod = button.dataset.paymentMethod || 'Pay at Counter';
   
   // Current date/time for bill generation
   const now = new Date();
@@ -720,6 +728,14 @@ function generateOrderPDF(button) {
   doc.setFont('helvetica', 'normal');
   doc.text('#' + orderId, 55, y + 10);
   doc.text(orderDate, 55, y + 20);
+  
+  // Payment method on right side top
+  doc.setFont('helvetica', 'bold');
+  doc.text('Payment:', 110, y + 30);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(59, 130, 246);
+  doc.text(paymentMethod, 145, y + 30);
+  doc.setTextColor(0, 0, 0);
   
   // Status with color
   if (orderStatus.toLowerCase() === 'completed') {

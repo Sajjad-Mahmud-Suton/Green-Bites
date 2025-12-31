@@ -433,12 +433,16 @@ function showAddedToCartToast(itemTitle, quantity = 1) {
 }
 
 // Show success modal after order
-function showOrderSuccessModal(orderId) {
+function showOrderSuccessModal(orderId, paymentMethod) {
   const modal = document.getElementById('orderSuccessModal');
   if (modal) {
     const orderIdSpan = modal.querySelector('.order-id-display');
     if (orderIdSpan) {
       orderIdSpan.textContent = orderId || '';
+    }
+    const paymentSpan = modal.querySelector('.payment-method-display');
+    if (paymentSpan) {
+      paymentSpan.textContent = paymentMethod || 'Pay at Counter';
     }
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
@@ -574,6 +578,7 @@ async function submitOrder() {
   const modal = document.getElementById('checkoutModal');
   const studentId = document.getElementById('checkoutStudentId')?.value.trim() || '';
   const instructions = document.getElementById('checkoutInstructions')?.value.trim() || '';
+  const paymentMethod = typeof getSelectedPaymentMethod === 'function' ? getSelectedPaymentMethod() : 'free';
   const confirmBtn = document.getElementById('confirmOrderBtn');
   
   if (cart.length === 0) {
@@ -615,7 +620,8 @@ async function submitOrder() {
         items: cart,
         total_price: getCartTotal(),
         student_id: studentId,
-        special_instructions: instructions
+        special_instructions: instructions,
+        payment_method: paymentMethod
       })
     });
 
@@ -630,7 +636,7 @@ async function submitOrder() {
       clearCart();
 
       // Show success modal
-      showOrderSuccessModal(result.order_id);
+      showOrderSuccessModal(result.order_id, paymentMethod);
     } else {
       alert(result.message || 'Failed to place order. Please try again.');
     }

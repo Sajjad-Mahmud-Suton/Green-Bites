@@ -95,6 +95,7 @@ $items = $data['items'] ?? [];
 $total_price = floatval($data['total_price'] ?? 0);
 $student_id = trim($data['student_id'] ?? '');
 $special_instructions = trim($data['special_instructions'] ?? '');
+$payment_method = trim($data['payment_method'] ?? 'Pay at Counter');
 
 if (empty($items) || !is_array($items)) {
     respond(false, 'Your cart is empty.');
@@ -176,15 +177,15 @@ $items_json = json_encode($items, JSON_UNESCAPED_UNICODE);
 
 try {
     // Insert order into database
-    $sql = "INSERT INTO orders (user_id, items, student_id, special_instructions, total_price, status, order_date) 
-            VALUES (?, ?, ?, ?, ?, 'Pending', NOW())";
+    $sql = "INSERT INTO orders (user_id, items, student_id, special_instructions, total_price, payment_method, status, order_date) 
+            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())";
     
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         respond(false, 'Server error. Please try again later.');
     }
 
-    mysqli_stmt_bind_param($stmt, 'isssd', $user_id, $items_json, $student_id, $special_instructions, $total_price);
+    mysqli_stmt_bind_param($stmt, 'isssds', $user_id, $items_json, $student_id, $special_instructions, $total_price, $payment_method);
     $success = mysqli_stmt_execute($stmt);
 
     if (!$success) {

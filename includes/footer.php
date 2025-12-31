@@ -453,6 +453,55 @@
             </div>
           </div>
           <div class="col-md-5">
+            <h6 class="checkout-section-title">Payment Method</h6>
+            <div class="payment-methods mb-4">
+              <div class="form-check payment-option active" onclick="selectPaymentMethod(this, 'free')">
+                <input class="form-check-input" type="radio" name="paymentMethod" id="paymentFree" value="free" checked>
+                <label class="form-check-label w-100" for="paymentFree">
+                  <div class="d-flex align-items-center">
+                    <div class="payment-icon bg-success text-white">
+                      <i class="bi bi-gift"></i>
+                    </div>
+                    <div class="ms-3">
+                      <strong>Pay at Counter</strong>
+                      <small class="d-block text-muted">Pay when you collect your order</small>
+                    </div>
+                    <i class="bi bi-check-circle-fill text-success ms-auto payment-check"></i>
+                  </div>
+                </label>
+              </div>
+              <div class="form-check payment-option mt-2" onclick="selectPaymentMethod(this, 'bkash')">
+                <input class="form-check-input" type="radio" name="paymentMethod" id="paymentBkash" value="bkash" disabled>
+                <label class="form-check-label w-100" for="paymentBkash">
+                  <div class="d-flex align-items-center">
+                    <div class="payment-icon" style="background: #E2136E; color: white;">
+                      <i class="bi bi-phone"></i>
+                    </div>
+                    <div class="ms-3">
+                      <strong>bKash</strong>
+                      <small class="d-block text-muted">Coming soon</small>
+                    </div>
+                    <span class="badge bg-secondary ms-auto">Soon</span>
+                  </div>
+                </label>
+              </div>
+              <div class="form-check payment-option mt-2" onclick="selectPaymentMethod(this, 'nagad')">
+                <input class="form-check-input" type="radio" name="paymentMethod" id="paymentNagad" value="nagad" disabled>
+                <label class="form-check-label w-100" for="paymentNagad">
+                  <div class="d-flex align-items-center">
+                    <div class="payment-icon" style="background: #F6921E; color: white;">
+                      <i class="bi bi-phone"></i>
+                    </div>
+                    <div class="ms-3">
+                      <strong>Nagad</strong>
+                      <small class="d-block text-muted">Coming soon</small>
+                    </div>
+                    <span class="badge bg-secondary ms-auto">Soon</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
             <h6 class="checkout-section-title">Additional Info (Optional)</h6>
             <div class="mb-3">
               <label class="form-label">Student ID</label>
@@ -487,7 +536,8 @@
         </div>
         <h4 class="mt-3 mb-2 text-success">Order Placed Successfully!</h4>
         <p class="text-muted mb-2">Thank you for your order.</p>
-        <p class="mb-4">Order ID: <strong class="order-id-display"></strong></p>
+        <p class="mb-2">Order ID: <strong class="order-id-display"></strong></p>
+        <p class="mb-4"><span class="badge bg-info payment-method-display">Pay at Counter</span></p>
         <div class="d-flex gap-3 justify-content-center">
           <a href="index.php" class="btn btn-success px-4">
             <i class="bi bi-house me-2"></i>Back to Home
@@ -503,6 +553,30 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Payment method selection
+function selectPaymentMethod(element, method) {
+  // Don't select if disabled
+  const radio = element.querySelector('input[type="radio"]');
+  if (radio && radio.disabled) return;
+  
+  // Remove active from all
+  document.querySelectorAll('.payment-option').forEach(opt => {
+    opt.classList.remove('active');
+    const input = opt.querySelector('input[type="radio"]');
+    if (input) input.checked = false;
+  });
+  
+  // Add active to selected
+  element.classList.add('active');
+  if (radio) radio.checked = true;
+}
+
+// Get selected payment method
+function getSelectedPaymentMethod() {
+  const selected = document.querySelector('input[name="paymentMethod"]:checked');
+  return selected ? selected.value : 'free';
+}
+
 // Smooth scroll to menu section from carousel
 function scrollToMenu(event) {
   event.preventDefault();

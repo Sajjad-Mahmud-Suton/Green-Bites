@@ -876,6 +876,7 @@ $csrf_token = $_SESSION['csrf_token'];
                   <th>Customer</th>
                   <th>Items</th>
                   <th>Total</th>
+                  <th>Payment</th>
                   <th>Status</th>
                   <th>Date</th>
                   <th>Actions</th>
@@ -898,6 +899,7 @@ $csrf_token = $_SESSION['csrf_token'];
                     <?php endforeach; ?>
                   </td>
                   <td><strong>৳<?php echo number_format($order['total_price'], 0); ?></strong></td>
+                  <td><span class="badge bg-info"><?php echo htmlspecialchars($order['payment_method'] ?? 'Pay at Counter'); ?></span></td>
                   <td>
                     <select class="form-select form-select-sm status-select" data-order-id="<?php echo $order['id']; ?>" style="width: 130px;">
                       <option value="Pending" <?php echo ($order['status'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
@@ -1689,6 +1691,7 @@ function refreshOrdersTable(orders) {
           ${items.map(item => `<div class="small">${item.title || item.name || 'Item'} × ${item.quantity}</div>`).join('')}
         </td>
         <td><strong>৳${parseFloat(order.total_price).toLocaleString()}</strong></td>
+        <td><span class="badge bg-info">${order.payment_method || 'Pay at Counter'}</span></td>
         <td>
           <select class="form-select form-select-sm status-select" data-order-id="${order.id}" style="width: 130px;">
             <option value="Pending" ${status == 'Pending' ? 'selected' : ''}>Pending</option>
@@ -2052,6 +2055,9 @@ function printAdminBill(orderId) {
     hour: '2-digit', minute: '2-digit'
   }), 20, 76);
   doc.text('Status: ' + (order.status || 'Pending').toUpperCase(), 20, 84);
+  doc.setTextColor(59, 130, 246);
+  doc.text('Payment: ' + (order.payment_method || 'Pay at Counter'), 20, 90);
+  doc.setTextColor(100, 100, 100);
   
   // Customer Info
   doc.setFont('helvetica', 'bold');
