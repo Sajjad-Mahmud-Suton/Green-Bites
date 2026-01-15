@@ -25,6 +25,7 @@
  */
 
 // Prevent direct access
+
 if (!defined('ADMIN_ACCESS')) {
     die('Direct access not allowed');
 }
