@@ -52,12 +52,13 @@ function updateCartBadge() {
 
 // Add item to cart
 function addToCart(id, title, price, image = '') {
-  const existingItem = cart.find(item => item.id === id);
+  const itemId = String(id); // Ensure ID is string for consistent comparison
+  const existingItem = cart.find(item => String(item.id) === itemId);
   if (existingItem) {
     existingItem.quantity++;
   } else {
     cart.push({
-      id: id,
+      id: itemId,
       title: title,
       price: parseFloat(price),
       image: image,
@@ -69,33 +70,44 @@ function addToCart(id, title, price, image = '') {
 
 // Remove item from cart
 function removeFromCart(id) {
-  cart = cart.filter(item => item.id !== id);
+  const itemId = String(id); // Ensure ID is string
+  cart = cart.filter(item => String(item.id) !== itemId);
   saveCart();
   renderCartPanel();
 }
 
 // Update item quantity
 async function updateQuantity(id, delta) {
-  const item = cart.find(item => item.id === id);
-  if (item) {
-    const newQuantity = item.quantity + delta;
-    
-    // If increasing quantity, check stock
-    if (delta > 0) {
-      const stockInfo = await checkItemStock(id);
+  const itemId = String(id); // Ensure ID is string for consistent comparison
+  const item = cart.find(i => String(i.id) === itemId);
+  
+  if (!item) {
+    console.error('Item not found in cart:', itemId);
+    return;
+  }
+  
+  const newQuantity = item.quantity + delta;
+  
+  // If increasing quantity, check stock
+  if (delta > 0) {
+    try {
+      const stockInfo = await checkItemStock(itemId);
       if (stockInfo && newQuantity > stockInfo.quantity) {
         showStockLimitToast(item.title, stockInfo.quantity);
         return;
       }
+    } catch (error) {
+      console.error('Stock check failed:', error);
+      // Continue anyway if stock check fails
     }
-    
+  }
+  
+  if (newQuantity <= 0) {
+    removeFromCart(itemId);
+  } else {
     item.quantity = newQuantity;
-    if (item.quantity <= 0) {
-      removeFromCart(id);
-    } else {
-      saveCart();
-      renderCartPanel();
-    }
+    saveCart();
+    renderCartPanel();
   }
 }
 

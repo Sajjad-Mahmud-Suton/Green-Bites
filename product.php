@@ -328,7 +328,7 @@ if ($singleProduct) {
                       <input type="number" id="productQty" value="1" min="1" max="<?php echo $quantity; ?>" readonly>
                       <button type="button" onclick="increaseQty(<?php echo $quantity; ?>)">+</button>
                     </div>
-                    <button class="btn btn-success add-to-cart-btn" onclick="addToCartFromProduct(<?php echo $singleProduct['id']; ?>, '<?php echo addslashes($singleProduct['title']); ?>', <?php echo $finalPrice; ?>)">
+                    <button class="btn btn-success add-to-cart-btn" onclick="addToCartFromProduct(<?php echo $singleProduct['id']; ?>, '<?php echo addslashes($singleProduct['title']); ?>', <?php echo $finalPrice; ?>, '<?php echo addslashes($singleProduct['image_url'] ?? ''); ?>')">
                       <i class="bi bi-cart-plus me-2"></i>Add to Cart
                     </button>
                   </div>
@@ -460,7 +460,7 @@ if ($singleProduct) {
       }
     }
     
-    async function addToCartFromProduct(id, title, price) {
+    async function addToCartFromProduct(id, title, price, image = '') {
       // Check login status first
       const loggedIn = await checkLoginStatus();
       if (!loggedIn) {
@@ -470,23 +470,23 @@ if ($singleProduct) {
       
       const qty = parseInt(document.getElementById('productQty').value) || 1;
       
-      // Use the cart.js addToCart function with quantity
+      // Use the cart.js addToCart function with quantity and image
       if (typeof addToCart !== 'undefined') {
         for (let i = 0; i < qty; i++) {
-          addToCart(id, title, price);
+          addToCart(id, title, price, image);
         }
         
         // Show success toast
         showToast(`Added ${qty}x ${title} to cart!`, 'success');
       } else {
-        // Fallback - add directly
+        // Fallback - add directly with image
         let cart = JSON.parse(localStorage.getItem('cart') || '[]');
         const existingIndex = cart.findIndex(item => item.id === id);
         
         if (existingIndex !== -1) {
           cart[existingIndex].quantity += qty;
         } else {
-          cart.push({ id: id, title: title, price: price, quantity: qty });
+          cart.push({ id: id, title: title, price: price, image: image, quantity: qty });
         }
         
         localStorage.setItem('cart', JSON.stringify(cart));

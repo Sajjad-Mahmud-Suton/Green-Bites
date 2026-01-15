@@ -194,6 +194,18 @@ if (isset($_SESSION['user_id'])) {
             $quantity = intval($row['quantity'] ?? 0);
             $isStockout = ($quantity == 0);
             $isLowStock = ($quantity > 0 && $quantity <= 5);
+            
+            // Generate description if empty
+            $displayDescription = $description;
+            if (empty($displayDescription)) {
+              $descriptions = [
+                "A delicious and freshly prepared " . strtolower($title) . " made with premium ingredients. Perfect for satisfying your cravings!",
+                "Experience the authentic taste of our " . strtolower($title) . ". Made with love and care for the best dining experience.",
+                "Enjoy our signature " . strtolower($title) . " - crafted with the finest ingredients for an unforgettable taste.",
+                "Our " . strtolower($title) . " is a customer favorite! Prepared fresh daily with quality ingredients."
+              ];
+              $displayDescription = $descriptions[array_rand($descriptions)];
+            }
             ?>
             <div class="col">
               <div class="card shadow menu-card border-success h-100 <?php echo $isStockout ? 'stockout-card' : ''; ?>">
@@ -217,14 +229,22 @@ if (isset($_SESSION['user_id'])) {
                 <div class="card-body">
                   <div class="card-title-price">
                     <h5 class="card-title"><?php echo $title; ?></h5>
-                    <?php if ($hasDiscount): ?>
-                    <div class="price-display">
-                      <span class="badge bg-success price-badge">৳<?php echo number_format($finalPrice, 0); ?></span>
-                      <small class="original-price">৳<?php echo number_format($originalPrice, 0); ?></small>
+                    <div class="price-info-row">
+                      <?php if ($hasDiscount): ?>
+                      <div class="price-display">
+                        <span class="badge bg-success price-badge">৳<?php echo number_format($finalPrice, 0); ?></span>
+                        <small class="original-price">৳<?php echo number_format($originalPrice, 0); ?></small>
+                      </div>
+                      <?php else: ?>
+                      <span class="badge bg-success price-badge">৳<?php echo number_format($originalPrice, 0); ?></span>
+                      <?php endif; ?>
+                      <!-- Info Button -->
+                      <button class="product-info-btn-sm" 
+                              onclick="event.stopPropagation(); showProductInfo('<?php echo addslashes($title); ?>', '<?php echo $image; ?>', '<?php echo addslashes($displayDescription); ?>', <?php echo $finalPrice; ?>, <?php echo $originalPrice; ?>, <?php echo $discountPercent; ?>, <?php echo $quantity; ?>)"
+                              title="View Details">
+                        <i class="bi bi-info-lg"></i>
+                      </button>
                     </div>
-                    <?php else: ?>
-                    <span class="badge bg-success price-badge">৳<?php echo number_format($originalPrice, 0); ?></span>
-                    <?php endif; ?>
                   </div>
                   <?php if ($isStockout): ?>
                     <button class="btn btn-secondary w-100 disabled order-btn" disabled data-item-id="<?php echo $row['id']; ?>" data-item-title="<?php echo $title; ?>" data-item-price="<?php echo $finalPrice; ?>" data-item-original-price="<?php echo $originalPrice; ?>" data-item-discount="<?php echo $discountPercent; ?>" data-item-image="<?php echo $image; ?>">
@@ -609,6 +629,418 @@ if (isset($_SESSION['user_id'])) {
   });
   </script>
  
+<!-- Product Info Modal -->
+<div class="modal fade" id="productInfoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content product-info-modal-content">
+      <button type="button" class="btn-close product-info-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="product-info-wrapper">
+        <div class="product-info-image-section">
+          <div class="product-info-image-container">
+            <img id="productInfoImage" src="" alt="Product Image">
+            <div class="product-info-badges">
+              <span id="productInfoDiscount" class="product-info-discount-badge d-none"></span>
+              <span id="productInfoStock" class="product-info-stock-badge"></span>
+            </div>
+          </div>
+        </div>
+        <div class="product-info-details">
+          <div class="product-info-category">
+            <i class="bi bi-tag-fill"></i> Green Bites Special
+          </div>
+          <h2 id="productInfoTitle" class="product-info-title"></h2>
+          <p id="productInfoDescription" class="product-info-description"></p>
+          
+          <div class="product-info-price-section">
+            <div class="product-info-price-row">
+              <span id="productInfoPrice" class="product-info-current-price"></span>
+              <span id="productInfoOriginalPrice" class="product-info-original-price d-none"></span>
+            </div>
+            <div id="productInfoSavings" class="product-info-savings d-none">
+              <i class="bi bi-piggy-bank-fill"></i> You save <span id="productInfoSaveAmount"></span>
+            </div>
+          </div>
+          
+          <div class="product-info-features">
+            <div class="product-info-feature">
+              <i class="bi bi-clock-fill"></i>
+              <span>Fresh & Ready</span>
+            </div>
+            <div class="product-info-feature">
+              <i class="bi bi-star-fill"></i>
+              <span>Top Rated</span>
+            </div>
+            <div class="product-info-feature">
+              <i class="bi bi-heart-fill"></i>
+              <span>Customer Favorite</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Price Info Row with Info Button */
+.price-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Small Info Button for Price Row */
+.product-info-btn-sm {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.product-info-btn-sm:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.5);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.product-info-btn-sm i {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Legacy - keep for category pages */
+.product-info-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border: 2px solid white;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+  z-index: 10;
+}
+
+.product-info-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.6);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.product-info-btn i {
+  font-size: 0.8rem;
+}
+
+/* Product Info Modal */
+.product-info-modal-content {
+  border: none;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+}
+
+.product-info-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  background: white;
+  border-radius: 50%;
+  padding: 12px;
+  opacity: 1;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.product-info-close:hover {
+  transform: rotate(90deg);
+  background: #fee2e2;
+}
+
+.product-info-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.product-info-image-section {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 30px;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-info-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 350px;
+}
+
+.product-info-image-container img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  transition: transform 0.5s ease;
+}
+
+.product-info-image-container:hover img {
+  transform: scale(1.05);
+}
+
+.product-info-badges {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-info-discount-badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.product-info-stock-badge {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+}
+
+.product-info-stock-badge.low-stock {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.product-info-stock-badge.out-of-stock {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.product-info-details {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.product-info-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #16a34a;
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 15px;
+  width: fit-content;
+}
+
+.product-info-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 15px;
+  line-height: 1.2;
+}
+
+.product-info-description {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+.product-info-price-section {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+}
+
+.product-info-price-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.product-info-current-price {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #16a34a;
+}
+
+.product-info-original-price {
+  font-size: 1.3rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.product-info-savings {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+.product-info-features {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.product-info-feature {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.product-info-feature i {
+  color: #16a34a;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .product-info-wrapper {
+    flex-direction: column;
+  }
+  
+  .product-info-image-section,
+  .product-info-details {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .product-info-image-section {
+    padding: 20px;
+  }
+  
+  .product-info-image-container img {
+    height: 220px;
+  }
+  
+  .product-info-details {
+    padding: 25px;
+  }
+  
+  .product-info-title {
+    font-size: 1.5rem;
+  }
+  
+  .product-info-current-price {
+    font-size: 1.8rem;
+  }
+  
+  .product-info-features {
+    gap: 10px;
+  }
+  
+  .product-info-feature {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+</style>
+
+<script>
+// Product Info Modal Function
+function showProductInfo(title, image, description, finalPrice, originalPrice, discount, quantity) {
+  // Set modal content
+  document.getElementById('productInfoTitle').textContent = title;
+  document.getElementById('productInfoImage').src = image;
+  document.getElementById('productInfoDescription').textContent = description;
+  document.getElementById('productInfoPrice').textContent = '৳' + Math.round(finalPrice).toLocaleString();
+  
+  // Handle discount
+  const discountBadge = document.getElementById('productInfoDiscount');
+  const originalPriceEl = document.getElementById('productInfoOriginalPrice');
+  const savingsEl = document.getElementById('productInfoSavings');
+  const saveAmountEl = document.getElementById('productInfoSaveAmount');
+  
+  if (discount > 0) {
+    discountBadge.textContent = discount + '% OFF';
+    discountBadge.classList.remove('d-none');
+    originalPriceEl.textContent = '৳' + Math.round(originalPrice).toLocaleString();
+    originalPriceEl.classList.remove('d-none');
+    
+    const savings = originalPrice - finalPrice;
+    saveAmountEl.textContent = '৳' + Math.round(savings).toLocaleString();
+    savingsEl.classList.remove('d-none');
+  } else {
+    discountBadge.classList.add('d-none');
+    originalPriceEl.classList.add('d-none');
+    savingsEl.classList.add('d-none');
+  }
+  
+  // Handle stock status
+  const stockBadge = document.getElementById('productInfoStock');
+  stockBadge.classList.remove('low-stock', 'out-of-stock');
+  
+  if (quantity === 0) {
+    stockBadge.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i>Out of Stock';
+    stockBadge.classList.add('out-of-stock');
+  } else if (quantity <= 5) {
+    stockBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Only ' + quantity + ' left!';
+    stockBadge.classList.add('low-stock');
+  } else {
+    stockBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>In Stock';
+  }
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('productInfoModal'));
+  modal.show();
+}
+</script>
   
 <?php include 'includes/footer.php'; ?>
 </body>

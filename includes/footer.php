@@ -455,8 +455,8 @@
           <div class="col-md-5">
             <h6 class="checkout-section-title">Payment Method</h6>
             <div class="payment-methods mb-4">
-              <div class="form-check payment-option active" onclick="selectPaymentMethod(this, 'free')">
-                <input class="form-check-input" type="radio" name="paymentMethod" id="paymentFree" value="free" checked>
+              <div class="form-check payment-option active" onclick="selectPaymentMethod(this, 'Pay at Counter')">
+                <input class="form-check-input" type="radio" name="paymentMethod" id="paymentFree" value="Pay at Counter" checked>
                 <label class="form-check-label w-100" for="paymentFree">
                   <div class="d-flex align-items-center">
                     <div class="payment-icon bg-success text-white">

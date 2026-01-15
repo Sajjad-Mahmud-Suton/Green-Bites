@@ -921,6 +921,10 @@ $csrf_token = $_SESSION['csrf_token'];
         <span class="badge bg-danger" id="complaintsBadge" style="display:none;">0</span>
       <?php endif; ?>
     </a>
+    <a href="#" class="nav-link" data-section="events">
+      <i class="bi bi-calendar-event"></i>
+      Event Bookings
+    </a>
     
     <div class="nav-section">Settings</div>
     <a href="#" class="nav-link" data-section="reports">
@@ -1859,6 +1863,9 @@ $csrf_token = $_SESSION['csrf_token'];
         </div>
       </div>
     </div>
+
+    <!-- Event Bookings Section -->
+    <?php include 'includes/events.php'; ?>
 
     <!-- Reports & Analytics Section -->
     <div id="reports" class="section-tab">
@@ -3221,6 +3228,7 @@ function attachStatusListeners() {
 function handleStatusChange() {
   const orderId = this.dataset.orderId;
   const status = this.value;
+  const previousStatus = this.getAttribute('data-previous-status') || 'Pending';
   
   fetch('api/update_order_status.php', {
     method: 'POST',
@@ -3232,6 +3240,29 @@ function handleStatusChange() {
   .then(result => {
     if (result.success) {
       showAlert('Order status updated!');
+      
+      // Update the previous status attribute
+      this.setAttribute('data-previous-status', status);
+      
+      // Auto-refresh menu stock when order is cancelled or un-cancelled
+      if (status === 'Cancelled' || previousStatus === 'Cancelled') {
+        refreshMenuStock();
+      }
+      
+      // Auto-refresh profit dashboard when order is delivered
+      if (status === 'Delivered') {
+        // Refresh profit data if profits section exists
+        if (typeof loadProfitData === 'function') {
+          loadProfitData();
+        }
+      }
+      
+      // If changing FROM Delivered, also refresh profits
+      if (previousStatus === 'Delivered' && status !== 'Delivered') {
+        if (typeof loadProfitData === 'function') {
+          loadProfitData();
+        }
+      }
     } else {
       showAlert(result.message || 'Failed to update.', 'danger');
     }
@@ -4632,9 +4663,18 @@ function debounce(func, wait) {
 }
 
 async function loadProfitData() {
-  const dateFrom = document.getElementById('profitDateFrom').value;
-  const dateTo = document.getElementById('profitDateTo').value;
-  const search = document.getElementById('profitSearch').value;
+  const dateFromEl = document.getElementById('profitDateFrom');
+  const dateToEl = document.getElementById('profitDateTo');
+  const searchEl = document.getElementById('profitSearch');
+  
+  // If elements don't exist yet, skip loading
+  if (!dateFromEl || !dateToEl) {
+    return;
+  }
+  
+  const dateFrom = dateFromEl.value || '';
+  const dateTo = dateToEl.value || '';
+  const search = searchEl ? searchEl.value : '';
   
   let url = 'api/profits.php?';
   if (dateFrom) url += `from=${dateFrom}&`;
@@ -5332,6 +5372,474 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, { passive: true });
 })();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EVENT BOOKINGS MANAGEMENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let eventBookingsData = [];
+let eventSearchTimeout = null;
+
+// Load event bookings when section is shown
+document.querySelector('[data-section="events"]').addEventListener('click', function() {
+  setTimeout(() => loadEventBookings(), 100);
+});
+
+// Debounce search
+function debounceEventSearch() {
+  clearTimeout(eventSearchTimeout);
+  eventSearchTimeout = setTimeout(() => loadEventBookings(), 500);
+}
+
+// Load event bookings
+async function loadEventBookings() {
+  const filter = document.getElementById('eventTimeFilter')?.value || 'upcoming';
+  const status = document.getElementById('eventStatusFilter')?.value || '';
+  const eventType = document.getElementById('eventTypeFilter')?.value || '';
+  const search = document.getElementById('eventSearch')?.value || '';
+  
+  let url = `api/get_event_bookings.php?filter=${filter}`;
+  if (status) url += `&status=${status}`;
+  if (eventType) url += `&event_type=${eventType}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  
+  try {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    const data = await response.json();
+    
+    if (data.success) {
+      eventBookingsData = data.bookings;
+      updateEventStats(data.stats);
+      renderEventBookings(data.bookings);
+    } else {
+      showAlert(data.message || 'Failed to load bookings', 'danger');
+    }
+  } catch (error) {
+    console.error('Error loading event bookings:', error);
+    showAlert('Error loading bookings', 'danger');
+  }
+}
+
+// Update stats cards
+function updateEventStats(stats) {
+  document.getElementById('eventTotalBookings').textContent = stats.total;
+  document.getElementById('eventUpcoming').textContent = stats.upcoming;
+  document.getElementById('eventToday').textContent = stats.today;
+  document.getElementById('eventTotalRevenue').textContent = '৳' + formatNumber(stats.total_revenue);
+}
+
+// Render bookings table
+function renderEventBookings(bookings) {
+  const tbody = document.getElementById('eventBookingsTable');
+  if (!tbody) return;
+  
+  if (bookings.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center py-5 text-muted">
+          <i class="bi bi-calendar-x fs-1 d-block mb-3 opacity-50"></i>
+          <p class="mb-0">No bookings found</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  const eventTypeEmojis = {
+    birthday: '🎂',
+    wedding: '💒',
+    corporate: '🏢',
+    anniversary: '💑',
+    graduation: '🎓',
+    reunion: '👨‍👩‍👧‍👦',
+    other: '📅'
+  };
+  
+  tbody.innerHTML = bookings.map(booking => {
+    const eventDate = new Date(booking.event_date);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const isToday = eventDate.toDateString() === today.toDateString();
+    const isPast = eventDate < today;
+    
+    const dateClass = isToday ? 'text-success fw-bold' : (isPast ? 'text-muted' : '');
+    const emoji = eventTypeEmojis[booking.event_type] || '📅';
+    
+    return `
+      <tr>
+        <td class="ps-3">
+          <div class="fw-semibold">${emoji} ${escapeHtml(booking.event_name)}</div>
+          <span class="event-type-badge event-type-${booking.event_type}">${booking.event_type}</span>
+        </td>
+        <td>
+          <div class="fw-semibold">${escapeHtml(booking.customer_name)}</div>
+          <small class="text-muted"><i class="bi bi-telephone me-1"></i>${escapeHtml(booking.customer_phone)}</small>
+        </td>
+        <td class="${dateClass}">
+          <div>${formatDate(booking.event_date)}</div>
+          <small class="text-muted"><i class="bi bi-clock me-1"></i>${formatTime(booking.event_time)}${booking.end_time ? ' - ' + formatTime(booking.end_time) : ''}</small>
+        </td>
+        <td>
+          <i class="bi bi-people me-1"></i>${booking.guest_count}
+        </td>
+        <td>
+          <span class="badge bg-${getPackageColor(booking.package_type)}">${booking.package_type}</span>
+        </td>
+        <td>
+          <div class="fw-semibold">৳${formatNumber(booking.total_amount)}</div>
+          ${booking.advance_amount > 0 ? `<small class="text-success">Adv: ৳${formatNumber(booking.advance_amount)}</small>` : ''}
+        </td>
+        <td>
+          <span class="payment-badge payment-${booking.payment_status}">${booking.payment_status}</span>
+        </td>
+        <td>
+          <select class="form-select form-select-sm booking-status-select" 
+                  style="width: auto; min-width: 120px;"
+                  onchange="updateBookingStatus(${booking.id}, this.value)">
+            <option value="pending" ${booking.booking_status === 'pending' ? 'selected' : ''}>Pending</option>
+            <option value="confirmed" ${booking.booking_status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+            <option value="in_progress" ${booking.booking_status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+            <option value="completed" ${booking.booking_status === 'completed' ? 'selected' : ''}>Completed</option>
+            <option value="cancelled" ${booking.booking_status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+          </select>
+        </td>
+        <td class="text-end pe-3">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="viewEventBooking(${booking.id})" title="View Details">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-outline-success" onclick="editEventBooking(${booking.id})" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteEventBooking(${booking.id})" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function getPackageColor(type) {
+  const colors = { basic: 'secondary', standard: 'primary', premium: 'warning', custom: 'info' };
+  return colors[type] || 'secondary';
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [hours, minutes] = timeStr.split(':');
+  const h = parseInt(hours);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${minutes} ${ampm}`;
+}
+
+// Open add booking modal
+function openEventBookingModal() {
+  document.getElementById('eventBookingId').value = '';
+  document.getElementById('eventBookingForm').reset();
+  document.getElementById('eventBookingModalTitle').innerHTML = '<i class="bi bi-calendar-plus me-2"></i>New Event Booking';
+  
+  // Set default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('eventDate').value = tomorrow.toISOString().split('T')[0];
+  document.getElementById('eventTime').value = '18:00';
+  document.getElementById('eventVenue').value = 'Green Bites Restaurant';
+  
+  new bootstrap.Modal(document.getElementById('eventBookingModal')).show();
+}
+
+// Save event booking
+async function saveEventBooking() {
+  const form = document.getElementById('eventBookingForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const bookingId = document.getElementById('eventBookingId').value;
+  const isEdit = bookingId !== '';
+  
+  const data = {
+    csrf_token: csrfToken,
+    event_name: document.getElementById('eventName').value,
+    event_type: document.getElementById('eventType').value,
+    customer_name: document.getElementById('eventCustomerName').value,
+    customer_phone: document.getElementById('eventCustomerPhone').value,
+    customer_email: document.getElementById('eventCustomerEmail').value,
+    event_date: document.getElementById('eventDate').value,
+    event_time: document.getElementById('eventTime').value,
+    end_time: document.getElementById('eventEndTime').value,
+    guest_count: parseInt(document.getElementById('eventGuestCount').value) || 1,
+    venue: document.getElementById('eventVenue').value,
+    package_type: document.getElementById('eventPackageType').value,
+    total_amount: parseFloat(document.getElementById('eventTotalAmount').value) || 0,
+    advance_amount: parseFloat(document.getElementById('eventAdvanceAmount').value) || 0,
+    payment_status: document.getElementById('eventPaymentStatus').value,
+    booking_status: document.getElementById('eventBookingStatus').value,
+    menu_items: document.getElementById('eventMenuItems').value,
+    decorations: document.getElementById('eventDecorations').value,
+    special_requirements: document.getElementById('eventSpecialRequirements').value,
+    notes: document.getElementById('eventNotes').value
+  };
+  
+  if (isEdit) {
+    data.id = parseInt(bookingId);
+  }
+  
+  const url = isEdit ? 'api/update_event_booking.php' : 'api/add_event_booking.php';
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'same-origin'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert(result.message, 'success');
+      bootstrap.Modal.getInstance(document.getElementById('eventBookingModal')).hide();
+      loadEventBookings();
+    } else {
+      showAlert(result.message || 'Failed to save booking', 'danger');
+    }
+  } catch (error) {
+    console.error('Error saving booking:', error);
+    showAlert('Error saving booking', 'danger');
+  }
+}
+
+// Edit event booking
+function editEventBooking(id) {
+  const booking = eventBookingsData.find(b => b.id == id);
+  if (!booking) return;
+  
+  document.getElementById('eventBookingId').value = booking.id;
+  document.getElementById('eventBookingModalTitle').innerHTML = '<i class="bi bi-calendar-check me-2"></i>Edit Event Booking';
+  
+  document.getElementById('eventName').value = booking.event_name;
+  document.getElementById('eventType').value = booking.event_type;
+  document.getElementById('eventCustomerName').value = booking.customer_name;
+  document.getElementById('eventCustomerPhone').value = booking.customer_phone;
+  document.getElementById('eventCustomerEmail').value = booking.customer_email || '';
+  document.getElementById('eventDate').value = booking.event_date;
+  document.getElementById('eventTime').value = booking.event_time;
+  document.getElementById('eventEndTime').value = booking.end_time || '';
+  document.getElementById('eventGuestCount').value = booking.guest_count;
+  document.getElementById('eventVenue').value = booking.venue || '';
+  document.getElementById('eventPackageType').value = booking.package_type;
+  document.getElementById('eventTotalAmount').value = booking.total_amount;
+  document.getElementById('eventAdvanceAmount').value = booking.advance_amount;
+  document.getElementById('eventPaymentStatus').value = booking.payment_status;
+  document.getElementById('eventBookingStatus').value = booking.booking_status;
+  document.getElementById('eventMenuItems').value = booking.menu_items || '';
+  document.getElementById('eventDecorations').value = booking.decorations || '';
+  document.getElementById('eventSpecialRequirements').value = booking.special_requirements || '';
+  document.getElementById('eventNotes').value = booking.notes || '';
+  
+  new bootstrap.Modal(document.getElementById('eventBookingModal')).show();
+}
+
+// View event booking details
+function viewEventBooking(id) {
+  const booking = eventBookingsData.find(b => b.id == id);
+  if (!booking) return;
+  
+  const eventTypeEmojis = {
+    birthday: '🎂 Birthday',
+    wedding: '💒 Wedding',
+    corporate: '🏢 Corporate',
+    anniversary: '💑 Anniversary',
+    graduation: '🎓 Graduation',
+    reunion: '👨‍👩‍👧‍👦 Reunion',
+    other: '📅 Other'
+  };
+  
+  const content = `
+    <div class="event-detail-card">
+      <h6><i class="bi bi-calendar-event me-2"></i>Event Information</h6>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Event Name</span>
+        <span class="event-detail-value">${escapeHtml(booking.event_name)}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Event Type</span>
+        <span class="event-detail-value">${eventTypeEmojis[booking.event_type] || booking.event_type}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Date & Time</span>
+        <span class="event-detail-value">${formatDate(booking.event_date)} at ${formatTime(booking.event_time)}${booking.end_time ? ' - ' + formatTime(booking.end_time) : ''}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Guests</span>
+        <span class="event-detail-value">${booking.guest_count} people</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Venue</span>
+        <span class="event-detail-value">${escapeHtml(booking.venue || 'Green Bites Restaurant')}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Status</span>
+        <span class="booking-status-badge status-${booking.booking_status}">${booking.booking_status}</span>
+      </div>
+    </div>
+    
+    <div class="event-detail-card">
+      <h6><i class="bi bi-person me-2"></i>Customer Details</h6>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Name</span>
+        <span class="event-detail-value">${escapeHtml(booking.customer_name)}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Phone</span>
+        <span class="event-detail-value"><a href="tel:${booking.customer_phone}">${escapeHtml(booking.customer_phone)}</a></span>
+      </div>
+      ${booking.customer_email ? `
+      <div class="event-detail-row">
+        <span class="event-detail-label">Email</span>
+        <span class="event-detail-value"><a href="mailto:${booking.customer_email}">${escapeHtml(booking.customer_email)}</a></span>
+      </div>
+      ` : ''}
+    </div>
+    
+    <div class="event-detail-card">
+      <h6><i class="bi bi-cash me-2"></i>Payment Details</h6>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Package</span>
+        <span class="event-detail-value"><span class="badge bg-${getPackageColor(booking.package_type)}">${booking.package_type}</span></span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Total Amount</span>
+        <span class="event-detail-value fw-bold text-success">৳${formatNumber(booking.total_amount)}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Advance Paid</span>
+        <span class="event-detail-value">৳${formatNumber(booking.advance_amount)}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Due Amount</span>
+        <span class="event-detail-value text-danger">৳${formatNumber(booking.total_amount - booking.advance_amount)}</span>
+      </div>
+      <div class="event-detail-row">
+        <span class="event-detail-label">Payment Status</span>
+        <span class="payment-badge payment-${booking.payment_status}">${booking.payment_status}</span>
+      </div>
+    </div>
+    
+    ${(booking.menu_items || booking.decorations || booking.special_requirements || booking.notes) ? `
+    <div class="event-detail-card">
+      <h6><i class="bi bi-list-check me-2"></i>Additional Details</h6>
+      ${booking.menu_items ? `
+      <div class="mb-3">
+        <strong class="text-muted">Menu Items:</strong>
+        <p class="mb-0">${escapeHtml(booking.menu_items)}</p>
+      </div>
+      ` : ''}
+      ${booking.decorations ? `
+      <div class="mb-3">
+        <strong class="text-muted">Decorations:</strong>
+        <p class="mb-0">${escapeHtml(booking.decorations)}</p>
+      </div>
+      ` : ''}
+      ${booking.special_requirements ? `
+      <div class="mb-3">
+        <strong class="text-muted">Special Requirements:</strong>
+        <p class="mb-0">${escapeHtml(booking.special_requirements)}</p>
+      </div>
+      ` : ''}
+      ${booking.notes ? `
+      <div>
+        <strong class="text-muted">Notes:</strong>
+        <p class="mb-0">${escapeHtml(booking.notes)}</p>
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
+    
+    <div class="text-muted small">
+      <i class="bi bi-clock me-1"></i>Created: ${new Date(booking.created_at).toLocaleString()}
+      ${booking.updated_at !== booking.created_at ? ` | Updated: ${new Date(booking.updated_at).toLocaleString()}` : ''}
+    </div>
+  `;
+  
+  document.getElementById('viewEventContent').innerHTML = content;
+  document.getElementById('editEventFromViewBtn').onclick = () => {
+    bootstrap.Modal.getInstance(document.getElementById('viewEventModal')).hide();
+    setTimeout(() => editEventBooking(id), 300);
+  };
+  
+  new bootstrap.Modal(document.getElementById('viewEventModal')).show();
+}
+
+// Update booking status inline
+async function updateBookingStatus(id, status) {
+  try {
+    const response = await fetch('api/update_event_booking.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, booking_status: status, csrf_token: csrfToken }),
+      credentials: 'same-origin'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert('Status updated!', 'success');
+      loadEventBookings();
+    } else {
+      showAlert(result.message || 'Failed to update status', 'danger');
+      loadEventBookings(); // Reload to reset dropdown
+    }
+  } catch (error) {
+    console.error('Error updating status:', error);
+    showAlert('Error updating status', 'danger');
+  }
+}
+
+// Delete event booking
+async function deleteEventBooking(id) {
+  if (!confirm('Are you sure you want to delete this booking?')) return;
+  
+  try {
+    const response = await fetch('api/delete_event_booking.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, csrf_token: csrfToken }),
+      credentials: 'same-origin'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert('Booking deleted!', 'success');
+      loadEventBookings();
+    } else {
+      showAlert(result.message || 'Failed to delete', 'danger');
+    }
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    showAlert('Error deleting booking', 'danger');
+  }
+}
+
+// Reset filters
+function resetEventFilters() {
+  document.getElementById('eventTimeFilter').value = 'upcoming';
+  document.getElementById('eventStatusFilter').value = '';
+  document.getElementById('eventTypeFilter').value = '';
+  document.getElementById('eventSearch').value = '';
+  loadEventBookings();
+}
 </script>
 </body>
 </html>

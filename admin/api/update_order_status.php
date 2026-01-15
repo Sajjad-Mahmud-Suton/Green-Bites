@@ -64,6 +64,36 @@ if (mysqli_stmt_execute($stmt)) {
        ═══════════════════════════════════════════════════════════════════════════ */
     
     if ($status === 'Delivered' && $previousStatus !== 'Delivered') {
+        // Check if profits table exists, create if not
+        $tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'profits'");
+        if (mysqli_num_rows($tableCheck) == 0) {
+            // Create profits table
+            mysqli_query($conn, "CREATE TABLE IF NOT EXISTS `profits` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `order_id` INT(11) NOT NULL,
+                `product_id` INT(11) NOT NULL,
+                `product_name` VARCHAR(100) NOT NULL,
+                `quantity` INT(11) NOT NULL DEFAULT 1,
+                `selling_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `buying_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `profit_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `revenue` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `investment` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `calculated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_order_id` (`order_id`),
+                KEY `idx_product_id` (`product_id`),
+                KEY `idx_calculated_at` (`calculated_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        }
+        
+        // Check if buying_price column exists in menu_items
+        $colCheck = mysqli_query($conn, "SHOW COLUMNS FROM menu_items LIKE 'buying_price'");
+        if (mysqli_num_rows($colCheck) == 0) {
+            mysqli_query($conn, "ALTER TABLE `menu_items` ADD COLUMN `buying_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `price`");
+            mysqli_query($conn, "UPDATE `menu_items` SET `buying_price` = ROUND(`price` * 0.8, 2) WHERE `buying_price` = 0");
+        }
+        
         // Check if profit already calculated for this order
         $checkProfitStmt = mysqli_prepare($conn, "SELECT COUNT(*) as cnt FROM profits WHERE order_id = ?");
         mysqli_stmt_bind_param($checkProfitStmt, 'i', $order_id);
@@ -82,13 +112,15 @@ if (mysqli_stmt_execute($stmt)) {
                 $buying_price = 0;
                 if ($item_id > 0) {
                     $menuStmt = mysqli_prepare($conn, "SELECT buying_price FROM menu_items WHERE id = ?");
-                    mysqli_stmt_bind_param($menuStmt, 'i', $item_id);
-                    mysqli_stmt_execute($menuStmt);
-                    $menuResult = mysqli_fetch_assoc(mysqli_stmt_get_result($menuStmt));
-                    mysqli_stmt_close($menuStmt);
-                    
-                    if ($menuResult) {
-                        $buying_price = floatval($menuResult['buying_price']);
+                    if ($menuStmt) {
+                        mysqli_stmt_bind_param($menuStmt, 'i', $item_id);
+                        mysqli_stmt_execute($menuStmt);
+                        $menuResult = mysqli_fetch_assoc(mysqli_stmt_get_result($menuStmt));
+                        mysqli_stmt_close($menuStmt);
+                        
+                        if ($menuResult) {
+                            $buying_price = floatval($menuResult['buying_price']);
+                        }
                     }
                 }
                 
@@ -105,19 +137,21 @@ if (mysqli_stmt_execute($stmt)) {
                 $profitStmt = mysqli_prepare($conn, 
                     "INSERT INTO profits (order_id, product_id, product_name, quantity, selling_price, buying_price, profit_amount, revenue, investment, calculated_at) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                mysqli_stmt_bind_param($profitStmt, 'iisiddddd', 
-                    $order_id, 
-                    $item_id, 
-                    $item_name, 
-                    $quantity, 
-                    $selling_price, 
-                    $buying_price, 
-                    $profit_amount,
-                    $revenue,
-                    $investment
-                );
-                mysqli_stmt_execute($profitStmt);
-                mysqli_stmt_close($profitStmt);
+                if ($profitStmt) {
+                    mysqli_stmt_bind_param($profitStmt, 'iisiddddd', 
+                        $order_id, 
+                        $item_id, 
+                        $item_name, 
+                        $quantity, 
+                        $selling_price, 
+                        $buying_price, 
+                        $profit_amount,
+                        $revenue,
+                        $investment
+                    );
+                    mysqli_stmt_execute($profitStmt);
+                    mysqli_stmt_close($profitStmt);
+                }
             }
         }
     }
