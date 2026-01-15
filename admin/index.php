@@ -4455,12 +4455,6 @@ function updateTables(data) {
   document.getElementById('topCustomersTable').innerHTML = topCustHtml || '<tr><td colspan="4" class="text-center text-muted">No data</td></tr>';
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 // Export Report as PDF
 function exportReportPDF() {
   if (!reportsData) {
@@ -4986,8 +4980,8 @@ function loadManualOrderItems(searchQuery = '') {
   fetch('api/get_menu.php')
     .then(r => r.json())
     .then(data => {
-      if (data.success && data.data) {
-        allMenuItemsForOrder = data.data;
+      if (data.success && data.items) {
+        allMenuItemsForOrder = data.items;
         renderManualOrderItems(allMenuItemsForOrder, searchQuery);
       } else {
         grid.innerHTML = '<div class="text-center text-muted py-4">Failed to load items</div>';

@@ -514,7 +514,7 @@ if (isset($conn)) {
       const highlightedTitle = highlightMatch(item.title, query);
       
       return `
-        <a href="category.php?id=${item.category_id}#item-${item.id}" 
+        <a href="product.php?id=${item.id}" 
            class="search-result-item" 
            data-index="${index}">
           <img src="${item.image_url}" 
