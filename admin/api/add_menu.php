@@ -20,6 +20,7 @@ if ($csrf !== ($_SESSION['csrf_token'] ?? '')) {
 // Get data
 $title = trim($_POST['name'] ?? '');
 $category_id = intval($_POST['category_id'] ?? 0);
+$buying_price = floatval($_POST['buying_price'] ?? 0);
 $price = floatval($_POST['price'] ?? 0);
 $discount_percent = intval($_POST['discount_percent'] ?? 0);
 $quantity = intval($_POST['quantity'] ?? 10);
@@ -28,7 +29,16 @@ $description = trim($_POST['description'] ?? '');
 
 // Validate
 if (empty($title) || $category_id <= 0 || $price <= 0) {
-    echo json_encode(['success' => false, 'message' => 'Name, category and price are required']);
+    echo json_encode(['success' => false, 'message' => 'Name, category and selling price are required']);
+    exit;
+}
+
+// Validate buying price
+if ($buying_price < 0) {
+    $buying_price = 0;
+}
+if ($buying_price > $price) {
+    echo json_encode(['success' => false, 'message' => 'Buying price must be less than or equal to selling price']);
     exit;
 }
 
@@ -40,8 +50,8 @@ if ($discount_percent < 0) $discount_percent = 0;
 if ($discount_percent > 99) $discount_percent = 99;
 
 // Insert
-$stmt = mysqli_prepare($conn, "INSERT INTO menu_items (title, price, discount_percent, image_url, category_id, description, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)");
-mysqli_stmt_bind_param($stmt, 'sdisisi', $title, $price, $discount_percent, $image_url, $category_id, $description, $quantity);
+$stmt = mysqli_prepare($conn, "INSERT INTO menu_items (title, price, buying_price, discount_percent, image_url, category_id, description, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+mysqli_stmt_bind_param($stmt, 'sddisisi', $title, $price, $buying_price, $discount_percent, $image_url, $category_id, $description, $quantity);
 
 if (mysqli_stmt_execute($stmt)) {
     $id = mysqli_insert_id($conn);

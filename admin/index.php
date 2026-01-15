@@ -306,6 +306,7 @@ $csrf_token = $_SESSION['csrf_token'];
     .stat-icon.blue { background: #dbeafe; color: #2563eb; }
     .stat-icon.orange { background: #ffedd5; color: #ea580c; }
     .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+    .text-purple { color: #9333ea; }
     .stat-value {
       font-size: 2rem;
       font-weight: 700;
@@ -593,6 +594,11 @@ $csrf_token = $_SESSION['csrf_token'];
         <span class="badge bg-success"><?php echo $stats['menu_items']; ?></span>
       <?php endif; ?>
     </a>
+    <a href="#" class="nav-link" data-section="profits">
+      <i class="bi bi-currency-dollar"></i>
+      Profit Dashboard
+      <span class="badge bg-success"><i class="bi bi-graph-up-arrow"></i></span>
+    </a>
     <a href="#" class="nav-link" data-section="orders">
       <i class="bi bi-bag-check"></i>
       Orders
@@ -775,7 +781,9 @@ $csrf_token = $_SESSION['csrf_token'];
                   <th>Image</th>
                   <th>Name</th>
                   <th>Category</th>
-                  <th>Price</th>
+                  <th>Buying</th>
+                  <th>Selling</th>
+                  <th>Profit</th>
                   <th>Discount</th>
                   <th>Stock</th>
                   <th>Actions</th>
@@ -784,9 +792,12 @@ $csrf_token = $_SESSION['csrf_token'];
               <tbody>
                 <?php foreach ($menuItems as $item): 
                   $originalPrice = floatval($item['price']);
+                  $buyingPrice = floatval($item['buying_price'] ?? 0);
                   $discountPercent = intval($item['discount_percent'] ?? 0);
                   $finalPrice = $discountPercent > 0 ? $originalPrice - ($originalPrice * $discountPercent / 100) : $originalPrice;
                   $hasDiscount = $discountPercent > 0;
+                  $profitPerItem = $finalPrice - $buyingPrice;
+                  $profitMargin = $buyingPrice > 0 ? round(($profitPerItem / $buyingPrice) * 100, 1) : 0;
                 ?>
                 <tr data-id="<?php echo $item['id']; ?>" data-category="<?php echo $item['category_id']; ?>">
                   <td>
@@ -796,11 +807,25 @@ $csrf_token = $_SESSION['csrf_token'];
                   <td><strong><?php echo htmlspecialchars($item['title']); ?></strong></td>
                   <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                   <td>
+                    <small class="text-muted">৳<?php echo number_format($buyingPrice, 0); ?></small>
+                  </td>
+                  <td>
                     <?php if ($hasDiscount): ?>
                       <strong class="text-success">৳<?php echo number_format($finalPrice, 0); ?></strong>
                       <br><small class="text-muted text-decoration-line-through">৳<?php echo number_format($originalPrice, 0); ?></small>
                     <?php else: ?>
                       <strong>৳<?php echo number_format($originalPrice, 0); ?></strong>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if ($profitPerItem > 0): ?>
+                      <span class="text-success">৳<?php echo number_format($profitPerItem, 0); ?></span>
+                      <br><small class="badge bg-success"><?php echo $profitMargin; ?>%</small>
+                    <?php elseif ($profitPerItem < 0): ?>
+                      <span class="text-danger">৳<?php echo number_format($profitPerItem, 0); ?></span>
+                      <br><small class="badge bg-danger">Loss</small>
+                    <?php else: ?>
+                      <span class="text-muted">-</span>
                     <?php endif; ?>
                   </td>
                   <td>
@@ -1150,6 +1175,259 @@ $csrf_token = $_SESSION['csrf_token'];
       </div>
     </div>
 
+    <!-- Profit Dashboard Section -->
+    <div id="profits" class="section-tab">
+      <div class="profits-header mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h5 class="mb-0"><i class="bi bi-currency-dollar text-success me-2"></i>Profit Dashboard</h5>
+            <small class="text-muted">Track profit margins, revenue, and investment</small>
+          </div>
+          <div class="d-flex gap-2">
+            <div class="input-group input-group-sm" style="width: 300px;">
+              <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+              <input type="date" class="form-control" id="profitDateFrom" value="">
+              <span class="input-group-text">to</span>
+              <input type="date" class="form-control" id="profitDateTo" value="">
+            </div>
+            <button class="btn btn-sm btn-outline-success" onclick="refreshProfitData()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <button class="btn btn-sm btn-success" onclick="exportProfitPDF()">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profit Overview Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+          <div class="card-custom h-100" style="border-left: 4px solid #22c55e;">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon green me-3"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                  <h6 class="text-muted mb-1">Total Profit</h6>
+                  <h3 class="mb-0 text-success" id="totalProfit">৳0</h3>
+                  <small class="text-muted" id="profitOrders">0 orders</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card-custom h-100" style="border-left: 4px solid #3b82f6;">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon blue me-3"><i class="bi bi-cash-stack"></i></div>
+                <div>
+                  <h6 class="text-muted mb-1">Total Revenue</h6>
+                  <h3 class="mb-0 text-primary" id="totalRevenue">৳0</h3>
+                  <small class="text-muted" id="revenueItems">0 items sold</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card-custom h-100" style="border-left: 4px solid #f59e0b;">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon orange me-3"><i class="bi bi-wallet2"></i></div>
+                <div>
+                  <h6 class="text-muted mb-1">Total Investment</h6>
+                  <h3 class="mb-0 text-warning" id="totalInvestment">৳0</h3>
+                  <small class="text-muted" id="investmentNote">Cost of goods sold</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card-custom h-100" style="border-left: 4px solid #8b5cf6;">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon purple me-3"><i class="bi bi-percent"></i></div>
+                <div>
+                  <h6 class="text-muted mb-1">Profit Margin</h6>
+                  <h3 class="mb-0 text-purple" id="profitMarginPercent">0%</h3>
+                  <small class="text-muted" id="avgProfitItem">৳0 avg/item</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Period Comparison Cards -->
+      <div class="row g-2 mb-4">
+        <div class="col-md-3">
+          <div class="report-stat-card today" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-day"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">Today's Profit</h6>
+              <h3 id="todayProfit" style="font-size: 1.3rem;">৳0</h3>
+              <small id="todayProfitOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="report-stat-card week" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-week"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Week</h6>
+              <h3 id="weekProfit" style="font-size: 1.3rem;">৳0</h3>
+              <small id="weekProfitOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="report-stat-card month" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-month"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Month</h6>
+              <h3 id="monthProfit" style="font-size: 1.3rem;">৳0</h3>
+              <small id="monthProfitOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="report-stat-card year" style="padding: 16px;">
+            <div class="report-stat-icon" style="width: 44px; height: 44px; font-size: 1.2rem;"><i class="bi bi-calendar-check"></i></div>
+            <div class="report-stat-content">
+              <h6 style="font-size: 0.75rem;">This Year</h6>
+              <h3 id="yearProfit" style="font-size: 1.3rem;">৳0</h3>
+              <small id="yearProfitOrders">0 orders</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profit Charts -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+          <div class="card-custom h-100">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Profit Trend (Last 30 Days)</h6>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="profitTrendChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card-custom h-100">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Profit Distribution by Category</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center py-2">
+              <canvas id="profitByCategoryChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Items & Revenue vs Profit Comparison -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-trophy me-2 text-warning"></i>Most Profitable Items</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 320px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Item</th>
+                    <th class="text-center">Units Sold</th>
+                    <th class="text-end">Profit</th>
+                    <th class="text-end">Margin</th>
+                  </tr>
+                </thead>
+                <tbody id="mostProfitableItems">
+                  <tr><td colspan="5" class="text-center text-muted py-3"><i class="bi bi-hourglass-split me-2"></i>Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Most Sold Items</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 320px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Item</th>
+                    <th class="text-center">Units Sold</th>
+                    <th class="text-end">Revenue</th>
+                    <th class="text-end">Profit</th>
+                  </tr>
+                </thead>
+                <tbody id="mostSoldItems">
+                  <tr><td colspan="5" class="text-center text-muted py-3"><i class="bi bi-hourglass-split me-2"></i>Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue vs Profit vs Investment Chart -->
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Monthly Revenue vs Profit vs Investment</h6>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="revenueProfitChart" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Profit Records Table -->
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card-custom">
+            <div class="card-header py-2">
+              <h6 class="mb-0"><i class="bi bi-table me-2"></i>Recent Profit Records</h6>
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="profitSearch" placeholder="Search product...">
+              </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 350px; overflow-y: auto;">
+              <table class="table table-custom table-sm mb-0">
+                <thead style="position: sticky; top: 0; background: #f8fafc;">
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Selling</th>
+                    <th class="text-end">Buying</th>
+                    <th class="text-end">Revenue</th>
+                    <th class="text-end">Investment</th>
+                    <th class="text-end">Profit</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="profitRecordsTable">
+                  <tr><td colspan="9" class="text-center text-muted py-3"><i class="bi bi-hourglass-split me-2"></i>Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reports & Analytics Section -->
     <div id="reports" class="section-tab">
       <div class="reports-header mb-3">
@@ -1405,8 +1683,14 @@ $csrf_token = $_SESSION['csrf_token'];
           </div>
           <div class="row">
             <div class="col-md-3 mb-3">
-              <label class="form-label">Price (৳) <span class="text-danger">*</span></label>
+              <label class="form-label">Buying Price (৳) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="buying_price" id="menuBuyingPrice" min="0" step="0.01" required>
+              <small class="text-muted">Cost price</small>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label">Selling Price (৳) <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="price" id="menuPrice" min="0" step="0.01" required>
+              <small class="text-muted">Customer price</small>
             </div>
             <div class="col-md-3 mb-3">
               <label class="form-label">Discount (%) <i class="bi bi-percent text-success"></i></label>
@@ -1414,6 +1698,13 @@ $csrf_token = $_SESSION['csrf_token'];
               <small class="text-muted">0 = No discount</small>
             </div>
             <div class="col-md-3 mb-3">
+              <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantity" id="menuQuantity" min="0" value="10" required>
+              <small class="text-muted">Available stock</small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
               <label class="form-label">Final Price</label>
               <div class="input-group">
                 <span class="input-group-text">৳</span>
@@ -1421,10 +1712,16 @@ $csrf_token = $_SESSION['csrf_token'];
               </div>
               <small class="text-success" id="discountPreview"></small>
             </div>
-            <div class="col-md-3 mb-3">
-              <label class="form-label">Stock Quantity <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" name="quantity" id="menuQuantity" min="0" value="10" required>
-              <small class="text-muted">Available stock</small>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Profit Margin</label>
+              <div class="input-group">
+                <span class="input-group-text">৳</span>
+                <input type="text" class="form-control bg-light" id="menuProfitMargin" readonly>
+              </div>
+              <small class="text-info" id="profitPercent"></small>
+            </div>
+            <div class="col-md-4 mb-3 d-flex align-items-end">
+              <div id="priceValidation" class="alert alert-sm mb-0 py-1 px-2 d-none"></div>
             </div>
           </div>
           <div class="row">
@@ -2137,9 +2434,14 @@ function openAddMenuModal() {
   document.getElementById('menuModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add Menu Item';
   document.getElementById('menuForm').reset();
   document.getElementById('menuItemId').value = '';
+  document.getElementById('menuBuyingPrice').value = '';
   document.getElementById('menuDiscount').value = 0;
   document.getElementById('menuFinalPrice').value = '';
+  document.getElementById('menuProfitMargin').value = '';
   document.getElementById('discountPreview').textContent = '';
+  document.getElementById('profitPercent').textContent = '';
+  document.getElementById('priceValidation').className = 'd-none';
+  document.getElementById('menuSubmitBtn').disabled = false;
 }
 
 function editMenuItem(id) {
@@ -2150,40 +2452,77 @@ function editMenuItem(id) {
   document.getElementById('menuItemId').value = item.id;
   document.getElementById('menuName').value = item.title;
   document.getElementById('menuCategory').value = item.category_id;
+  document.getElementById('menuBuyingPrice').value = item.buying_price || '';
   document.getElementById('menuPrice').value = item.price;
   document.getElementById('menuDiscount').value = item.discount_percent || 0;
   document.getElementById('menuQuantity').value = item.quantity || 0;
   document.getElementById('menuImage').value = item.image_url || '';
   document.getElementById('menuDescription').value = item.description || '';
   
-  // Calculate and show final price
+  // Calculate and show final price and profit margin
   calculateFinalPrice();
   
   new bootstrap.Modal(document.getElementById('menuModal')).show();
 }
 
-// Calculate final price with discount
+// Calculate final price with discount and profit margin
 function calculateFinalPrice() {
-  const price = parseFloat(document.getElementById('menuPrice').value) || 0;
+  const buyingPrice = parseFloat(document.getElementById('menuBuyingPrice').value) || 0;
+  const sellingPrice = parseFloat(document.getElementById('menuPrice').value) || 0;
   const discount = parseInt(document.getElementById('menuDiscount').value) || 0;
+  const validationDiv = document.getElementById('priceValidation');
   
-  if (price > 0) {
-    const finalPrice = price - (price * discount / 100);
+  // Calculate final price after discount
+  if (sellingPrice > 0) {
+    const finalPrice = sellingPrice - (sellingPrice * discount / 100);
     document.getElementById('menuFinalPrice').value = finalPrice.toFixed(0);
     
     if (discount > 0) {
-      const savings = price - finalPrice;
+      const savings = sellingPrice - finalPrice;
       document.getElementById('discountPreview').innerHTML = `<i class="bi bi-tag-fill"></i> Save ৳${savings.toFixed(0)} (${discount}% off)`;
     } else {
       document.getElementById('discountPreview').textContent = '';
     }
+    
+    // Calculate profit margin
+    if (buyingPrice > 0) {
+      const profitAmount = finalPrice - buyingPrice;
+      const profitPercent = ((finalPrice - buyingPrice) / buyingPrice * 100).toFixed(1);
+      document.getElementById('menuProfitMargin').value = profitAmount.toFixed(0);
+      document.getElementById('profitPercent').innerHTML = `${profitPercent}% margin`;
+      
+      // Validation
+      if (buyingPrice > sellingPrice) {
+        validationDiv.className = 'alert alert-danger mb-0 py-1 px-2';
+        validationDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Buying price must be ≤ selling price';
+        document.getElementById('menuSubmitBtn').disabled = true;
+      } else if (buyingPrice > finalPrice) {
+        validationDiv.className = 'alert alert-warning mb-0 py-1 px-2';
+        validationDiv.innerHTML = '<i class="bi bi-exclamation-circle"></i> Negative profit with discount!';
+        document.getElementById('menuSubmitBtn').disabled = false;
+      } else {
+        validationDiv.className = 'alert alert-success mb-0 py-1 px-2';
+        validationDiv.innerHTML = '<i class="bi bi-check-circle"></i> Valid pricing';
+        document.getElementById('menuSubmitBtn').disabled = false;
+      }
+    } else {
+      document.getElementById('menuProfitMargin').value = '';
+      document.getElementById('profitPercent').textContent = '';
+      validationDiv.className = 'alert alert-info mb-0 py-1 px-2';
+      validationDiv.innerHTML = '<i class="bi bi-info-circle"></i> Enter buying price';
+      document.getElementById('menuSubmitBtn').disabled = false;
+    }
   } else {
     document.getElementById('menuFinalPrice').value = '';
     document.getElementById('discountPreview').textContent = '';
+    document.getElementById('menuProfitMargin').value = '';
+    document.getElementById('profitPercent').textContent = '';
+    validationDiv.className = 'd-none';
   }
 }
 
 // Add event listeners for price calculation
+document.getElementById('menuBuyingPrice').addEventListener('input', calculateFinalPrice);
 document.getElementById('menuPrice').addEventListener('input', calculateFinalPrice);
 document.getElementById('menuDiscount').addEventListener('input', calculateFinalPrice);
 
@@ -3450,6 +3789,384 @@ function exportReportPDF() {
   
   doc.save('GreenBites_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
   showAlert('Report exported successfully!', 'success');
+}
+
+// ============================================
+// PROFIT DASHBOARD FUNCTIONALITY
+// ============================================
+let profitsData = null;
+let profitTrendChart = null;
+let profitByCategoryChart = null;
+let revenueProfitChart = null;
+
+// Set default date range (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date();
+  const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  document.getElementById('profitDateTo').value = today.toISOString().split('T')[0];
+  document.getElementById('profitDateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+  
+  // Add date filter listeners
+  document.getElementById('profitDateFrom').addEventListener('change', loadProfitData);
+  document.getElementById('profitDateTo').addEventListener('change', loadProfitData);
+  document.getElementById('profitSearch').addEventListener('input', debounce(loadProfitData, 500));
+});
+
+// Load profits when section is shown
+document.querySelector('[data-section="profits"]').addEventListener('click', function() {
+  setTimeout(() => loadProfitData(), 100);
+});
+
+// Debounce function for search
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+async function loadProfitData() {
+  const dateFrom = document.getElementById('profitDateFrom').value;
+  const dateTo = document.getElementById('profitDateTo').value;
+  const search = document.getElementById('profitSearch').value;
+  
+  let url = 'api/profits.php?';
+  if (dateFrom) url += `from=${dateFrom}&`;
+  if (dateTo) url += `to=${dateTo}&`;
+  if (search) url += `search=${encodeURIComponent(search)}&`;
+  
+  try {
+    const response = await fetch(url);
+    profitsData = await response.json();
+    
+    if (profitsData.success) {
+      updateProfitOverview(profitsData);
+      updateProfitPeriods(profitsData);
+      updateProfitCharts(profitsData);
+      updateProfitTables(profitsData);
+    } else {
+      showAlert(profitsData.message || 'Failed to load profit data', 'danger');
+    }
+  } catch (error) {
+    console.error('Error loading profits:', error);
+    showAlert('Error loading profit data', 'danger');
+  }
+}
+
+function refreshProfitData() {
+  loadProfitData();
+  showAlert('Profit data refreshed!', 'success');
+}
+
+function updateProfitOverview(data) {
+  const ov = data.overview;
+  
+  document.getElementById('totalProfit').textContent = '৳' + formatNumber(ov.total_profit);
+  document.getElementById('profitOrders').textContent = ov.total_orders + ' orders';
+  
+  document.getElementById('totalRevenue').textContent = '৳' + formatNumber(ov.total_revenue);
+  document.getElementById('revenueItems').textContent = ov.total_items_sold + ' items sold';
+  
+  document.getElementById('totalInvestment').textContent = '৳' + formatNumber(ov.total_investment);
+  
+  document.getElementById('profitMarginPercent').textContent = ov.profit_margin_percent + '%';
+  document.getElementById('avgProfitItem').textContent = '৳' + formatNumber(ov.avg_profit_per_item) + ' avg/item';
+}
+
+function updateProfitPeriods(data) {
+  const periods = data.periods;
+  
+  document.getElementById('todayProfit').textContent = '৳' + formatNumber(periods.today.profit);
+  document.getElementById('todayProfitOrders').textContent = periods.today.orders + ' orders';
+  
+  document.getElementById('weekProfit').textContent = '৳' + formatNumber(periods.week.profit);
+  document.getElementById('weekProfitOrders').textContent = periods.week.orders + ' orders';
+  
+  document.getElementById('monthProfit').textContent = '৳' + formatNumber(periods.month.profit);
+  document.getElementById('monthProfitOrders').textContent = periods.month.orders + ' orders';
+  
+  document.getElementById('yearProfit').textContent = '৳' + formatNumber(periods.year.profit);
+  document.getElementById('yearProfitOrders').textContent = periods.year.orders + ' orders';
+}
+
+function updateProfitCharts(data) {
+  // Profit Trend Chart (Line)
+  const trendCtx = document.getElementById('profitTrendChart').getContext('2d');
+  if (profitTrendChart) profitTrendChart.destroy();
+  
+  profitTrendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: data.profit_trend.map(d => d.label),
+      datasets: [
+        {
+          label: 'Profit',
+          data: data.profit_trend.map(d => d.profit),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+          pointBackgroundColor: '#22c55e'
+        },
+        {
+          label: 'Revenue',
+          data: data.profit_trend.map(d => d.revenue),
+          borderColor: '#3b82f6',
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          tension: 0.4,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => '৳' + formatNumber(value)
+          }
+        }
+      }
+    }
+  });
+  
+  // Profit by Category (Doughnut)
+  const catCtx = document.getElementById('profitByCategoryChart').getContext('2d');
+  if (profitByCategoryChart) profitByCategoryChart.destroy();
+  
+  const catColors = [
+    '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
+    '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1'
+  ];
+  
+  if (data.profit_by_category.length > 0) {
+    profitByCategoryChart = new Chart(catCtx, {
+      type: 'doughnut',
+      data: {
+        labels: data.profit_by_category.map(c => c.name),
+        datasets: [{
+          data: data.profit_by_category.map(c => c.profit),
+          backgroundColor: catColors.slice(0, data.profit_by_category.length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              usePointStyle: true,
+              font: { size: 11 }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    catCtx.font = '14px Arial';
+    catCtx.fillStyle = '#94a3b8';
+    catCtx.textAlign = 'center';
+    catCtx.fillText('No profit data yet', catCtx.canvas.width / 2, catCtx.canvas.height / 2);
+  }
+  
+  // Revenue vs Profit vs Investment (Monthly Bar)
+  const compCtx = document.getElementById('revenueProfitChart').getContext('2d');
+  if (revenueProfitChart) revenueProfitChart.destroy();
+  
+  if (data.monthly_comparison.length > 0) {
+    revenueProfitChart = new Chart(compCtx, {
+      type: 'bar',
+      data: {
+        labels: data.monthly_comparison.map(m => m.label),
+        datasets: [
+          {
+            label: 'Revenue',
+            data: data.monthly_comparison.map(m => m.revenue),
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderRadius: 4
+          },
+          {
+            label: 'Investment',
+            data: data.monthly_comparison.map(m => m.investment),
+            backgroundColor: 'rgba(245, 158, 11, 0.7)',
+            borderRadius: 4
+          },
+          {
+            label: 'Profit',
+            data: data.monthly_comparison.map(m => m.profit),
+            backgroundColor: 'rgba(34, 197, 94, 0.9)',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => '৳' + formatNumber(value)
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+function updateProfitTables(data) {
+  // Most Profitable Items
+  const profitableHtml = data.most_profitable_items.map((item, i) => `
+    <tr>
+      <td><span class="badge ${i < 3 ? 'bg-warning text-dark' : 'bg-secondary'}">${i + 1}</span></td>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td class="text-center">${item.units_sold}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(item.profit)}</td>
+      <td class="text-end"><span class="badge bg-info">${item.margin}%</span></td>
+    </tr>
+  `).join('');
+  document.getElementById('mostProfitableItems').innerHTML = profitableHtml || '<tr><td colspan="5" class="text-center text-muted py-3">No profit data yet</td></tr>';
+  
+  // Most Sold Items
+  const soldHtml = data.most_sold_items.map((item, i) => `
+    <tr>
+      <td><span class="badge ${i < 3 ? 'bg-primary' : 'bg-secondary'}">${i + 1}</span></td>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td class="text-center">${item.units_sold}</td>
+      <td class="text-end">৳${formatNumber(item.revenue)}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(item.profit)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('mostSoldItems').innerHTML = soldHtml || '<tr><td colspan="5" class="text-center text-muted py-3">No sales data yet</td></tr>';
+  
+  // Recent Profit Records
+  const recordsHtml = data.recent_records.map(rec => `
+    <tr>
+      <td><span class="badge bg-success">#${rec.order_id}</span></td>
+      <td><strong>${escapeHtml(rec.product_name)}</strong></td>
+      <td class="text-center">${rec.quantity}</td>
+      <td class="text-end">৳${rec.selling_price.toFixed(0)}</td>
+      <td class="text-end">৳${rec.buying_price.toFixed(0)}</td>
+      <td class="text-end">৳${formatNumber(rec.revenue)}</td>
+      <td class="text-end text-warning">৳${formatNumber(rec.investment)}</td>
+      <td class="text-end text-success fw-bold">৳${formatNumber(rec.profit)}</td>
+      <td><small>${new Date(rec.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</small></td>
+    </tr>
+  `).join('');
+  document.getElementById('profitRecordsTable').innerHTML = recordsHtml || '<tr><td colspan="9" class="text-center text-muted py-3">No profit records yet</td></tr>';
+}
+
+// Export Profit Report as PDF
+function exportProfitPDF() {
+  if (!profitsData) {
+    showAlert('Please wait for profit data to load', 'warning');
+    return;
+  }
+  
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  
+  // Header
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Green Bites', pageWidth / 2, 18, { align: 'center' });
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Profit & Analytics Report', pageWidth / 2, 28, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('Generated: ' + new Date().toLocaleDateString(), pageWidth / 2, 36, { align: 'center' });
+  
+  let yPos = 55;
+  doc.setTextColor(0, 0, 0);
+  
+  // Profit Summary
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Profit Summary', 15, yPos);
+  yPos += 10;
+  
+  const ov = profitsData.overview;
+  const summaryData = [
+    ['Total Profit', 'TK ' + formatNumber(ov.total_profit)],
+    ['Total Revenue', 'TK ' + formatNumber(ov.total_revenue)],
+    ['Total Investment', 'TK ' + formatNumber(ov.total_investment)],
+    ['Profit Margin', ov.profit_margin_percent + '%'],
+    ['Total Orders', ov.total_orders.toString()],
+    ['Items Sold', ov.total_items_sold.toString()]
+  ];
+  
+  doc.autoTable({
+    startY: yPos,
+    head: [['Metric', 'Value']],
+    body: summaryData,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 15, right: 15 },
+    columnStyles: { 1: { halign: 'right' } }
+  });
+  
+  yPos = doc.lastAutoTable.finalY + 15;
+  
+  // Most Profitable Items
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Most Profitable Items', 15, yPos);
+  yPos += 10;
+  
+  const profitableData = profitsData.most_profitable_items.slice(0, 10).map((item, i) => [
+    i + 1,
+    item.name,
+    item.units_sold,
+    'TK ' + formatNumber(item.profit),
+    item.margin + '%'
+  ]);
+  
+  doc.autoTable({
+    startY: yPos,
+    head: [['#', 'Item Name', 'Units Sold', 'Profit', 'Margin']],
+    body: profitableData,
+    theme: 'grid',
+    headStyles: { fillColor: [34, 197, 94] },
+    margin: { left: 15, right: 15 }
+  });
+  
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.setTextColor(128, 128, 128);
+    doc.text('Green Bites Canteen - Profit Report - Confidential', pageWidth / 2, 290, { align: 'center' });
+  }
+  
+  doc.save('GreenBites_Profit_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
+  showAlert('Profit report exported successfully!', 'success');
 }
 </script>
 </body>

@@ -18,6 +18,7 @@ if ($csrf !== ($_SESSION['csrf_token'] ?? '')) {
 $id = intval($_POST['id'] ?? 0);
 $title = trim($_POST['name'] ?? '');
 $category_id = intval($_POST['category_id'] ?? 0);
+$buying_price = floatval($_POST['buying_price'] ?? 0);
 $price = floatval($_POST['price'] ?? 0);
 $discount_percent = intval($_POST['discount_percent'] ?? 0);
 $quantity = intval($_POST['quantity'] ?? 0);
@@ -29,6 +30,15 @@ if ($id <= 0 || empty($title) || $category_id <= 0 || $price <= 0) {
     exit;
 }
 
+// Validate buying price
+if ($buying_price < 0) {
+    $buying_price = 0;
+}
+if ($buying_price > $price) {
+    echo json_encode(['success' => false, 'message' => 'Buying price must be less than or equal to selling price']);
+    exit;
+}
+
 // Validate quantity and discount
 if ($quantity < 0) {
     $quantity = 0;
@@ -36,8 +46,8 @@ if ($quantity < 0) {
 if ($discount_percent < 0) $discount_percent = 0;
 if ($discount_percent > 99) $discount_percent = 99;
 
-$stmt = mysqli_prepare($conn, "UPDATE menu_items SET title = ?, price = ?, discount_percent = ?, image_url = ?, category_id = ?, description = ?, quantity = ? WHERE id = ?");
-mysqli_stmt_bind_param($stmt, 'sdisisii', $title, $price, $discount_percent, $image_url, $category_id, $description, $quantity, $id);
+$stmt = mysqli_prepare($conn, "UPDATE menu_items SET title = ?, price = ?, buying_price = ?, discount_percent = ?, image_url = ?, category_id = ?, description = ?, quantity = ? WHERE id = ?");
+mysqli_stmt_bind_param($stmt, 'sddisisii', $title, $price, $buying_price, $discount_percent, $image_url, $category_id, $description, $quantity, $id);
 
 if (mysqli_stmt_execute($stmt)) {
     echo json_encode(['success' => true, 'message' => 'Menu item updated!']);
