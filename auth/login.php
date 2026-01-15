@@ -120,7 +120,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 try {
-    $sql  = "SELECT id, full_name, username, email, password FROM users WHERE email = ? LIMIT 1";
+    $sql  = "SELECT id, full_name, username, email, password, status FROM users WHERE email = ? LIMIT 1";
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         respond(false, 'Server error. Please try again later.');
@@ -137,6 +137,27 @@ try {
         recordLoginAttempt($clientIP, false);
         securityLog('login_failed', 'Failed login attempt', ['email' => $email]);
         respond(false, 'Invalid email or password.');
+    }
+    
+    
+    /* ═══════════════════════════════════════════════════════════════════════════
+       SECTION 5.5: USER STATUS CHECK
+       ═══════════════════════════════════════════════════════════════════════════ */
+    
+    $userStatus = $user['status'] ?? 'active';
+    
+    if ($userStatus === 'paused') {
+        securityLog('login_blocked', 'Login blocked - account paused', ['user_id' => $user['id'], 'email' => $email]);
+        respond(false, 'Your account has been temporarily paused. Please contact support for assistance.', [
+            'status' => 'paused'
+        ]);
+    }
+    
+    if ($userStatus === 'suspended') {
+        securityLog('login_blocked', 'Login blocked - account suspended', ['user_id' => $user['id'], 'email' => $email]);
+        respond(false, 'Your account has been suspended. Please contact support for more information.', [
+            'status' => 'suspended'
+        ]);
     }
 
 

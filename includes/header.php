@@ -55,6 +55,45 @@ if (isset($conn)) {
           <li class="nav-item"><a class="nav-link" href="index.php#complaintsSection">Complaint</a></li>
           <li class="nav-item"><a class="nav-link" href="index.php#aboutusSection">About Us</a></li>
 
+          <!-- Live Search Bar -->
+          <li class="nav-item mx-lg-2 my-2 my-lg-0">
+            <div class="navbar-search-container position-relative">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                  <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" 
+                       class="form-control border-start-0 navbar-search-input" 
+                       id="navbarSearchInput" 
+                       placeholder="Search menu..." 
+                       autocomplete="off"
+                       aria-label="Search menu items">
+                <button class="btn btn-outline-secondary d-none navbar-search-clear" 
+                        type="button" 
+                        id="searchClearBtn"
+                        aria-label="Clear search">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+              <!-- Search Results Dropdown -->
+              <div class="navbar-search-results shadow-lg" id="searchResultsDropdown">
+                <div class="search-results-list" id="searchResultsList">
+                  <!-- Results will be injected here -->
+                </div>
+                <div class="search-loading text-center py-3" id="searchLoading" style="display: none;">
+                  <div class="spinner-border spinner-border-sm text-success" role="status">
+                    <span class="visually-hidden">Searching...</span>
+                  </div>
+                  <span class="ms-2 text-muted">Searching...</span>
+                </div>
+                <div class="search-no-results text-center py-3" id="searchNoResults" style="display: none;">
+                  <i class="bi bi-search text-muted fs-4"></i>
+                  <p class="mb-0 text-muted mt-2">No items found</p>
+                </div>
+              </div>
+            </div>
+          </li>
+
           <!-- Auth / Account area (updated dynamically via JS + check_session.php) -->
           <li class="nav-item ms-lg-3" id="authNavItem">
             <a class="btn btn-success px-4" href="login.php">Login</a>
@@ -79,6 +118,11 @@ if (isset($conn)) {
       .then(data => {
         if (!data || !data.logged_in) {
           authNavItem.innerHTML = '<a class="btn btn-success px-4" href="login.php">Login</a>';
+          
+          // Show message if user was logged out due to status change
+          if (data.reason && data.message) {
+            showSessionAlert(data.message, data.reason);
+          }
           return;
         }
 
@@ -221,4 +265,462 @@ if (isset($conn)) {
       });
     }
   });
+</script>
+
+<!-- Live Search Styles -->
+<style>
+  /* Navbar Search Container */
+  .navbar-search-container {
+    min-width: 200px;
+    max-width: 280px;
+  }
+  
+  .navbar-search-container .input-group {
+    border-radius: 25px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .navbar-search-container .input-group-text {
+    border-radius: 25px 0 0 25px;
+    border: none;
+    padding-left: 15px;
+  }
+  
+  .navbar-search-input {
+    border: none !important;
+    padding-right: 40px;
+    font-size: 0.9rem;
+  }
+  
+  .navbar-search-input:focus {
+    box-shadow: none !important;
+    outline: none;
+  }
+  
+  .navbar-search-clear {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    padding: 5px 10px;
+  }
+  
+  .navbar-search-clear:hover {
+    color: #dc3545;
+    background: transparent;
+  }
+  
+  /* Search Results Dropdown */
+  .navbar-search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1060;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .navbar-search-results.show {
+    display: block;
+    animation: fadeSlideIn 0.2s ease-out;
+  }
+  
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s ease;
+    cursor: pointer;
+  }
+  
+  .search-result-item:hover,
+  .search-result-item.highlighted {
+    background: #f0fdf4;
+  }
+  
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+  
+  .search-result-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  .search-result-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .search-result-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .search-result-category {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+  
+  .search-result-price {
+    text-align: right;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+  
+  .search-result-price .current-price {
+    font-weight: 700;
+    color: #16a34a;
+    font-size: 0.95rem;
+  }
+  
+  .search-result-price .original-price {
+    font-size: 0.75rem;
+    color: #999;
+    text-decoration: line-through;
+  }
+  
+  .search-result-price .discount-badge {
+    font-size: 0.65rem;
+    background: #dc3545;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-left: 5px;
+  }
+  
+  .search-result-item .out-of-stock {
+    font-size: 0.7rem;
+    color: #dc3545;
+    font-weight: 600;
+  }
+  
+  /* Mobile adjustments */
+  @media (max-width: 991px) {
+    .navbar-search-container {
+      min-width: 100%;
+      max-width: 100%;
+    }
+    
+    .navbar-search-results {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      top: 70px;
+      width: auto;
+    }
+  }
+</style>
+
+<!-- Live Search JavaScript -->
+<script>
+(function() {
+  const searchInput = document.getElementById('navbarSearchInput');
+  const resultsDropdown = document.getElementById('searchResultsDropdown');
+  const resultsList = document.getElementById('searchResultsList');
+  const loadingEl = document.getElementById('searchLoading');
+  const noResultsEl = document.getElementById('searchNoResults');
+  const clearBtn = document.getElementById('searchClearBtn');
+  
+  if (!searchInput) return;
+  
+  let debounceTimer = null;
+  let currentHighlightIndex = -1;
+  let currentResults = [];
+  
+  // Debounced search function (300ms delay)
+  function performSearch(query) {
+    clearTimeout(debounceTimer);
+    
+    if (query.length < 2) {
+      hideResults();
+      return;
+    }
+    
+    debounceTimer = setTimeout(function() {
+      showLoading();
+      
+      fetch('api/search.php?q=' + encodeURIComponent(query) + '&limit=10')
+        .then(response => response.json())
+        .then(data => {
+          hideLoading();
+          
+          if (data.success && data.results.length > 0) {
+            currentResults = data.results;
+            renderResults(data.results, query);
+            showResults();
+          } else {
+            currentResults = [];
+            showNoResults();
+          }
+        })
+        .catch(err => {
+          console.error('Search error:', err);
+          hideLoading();
+          showNoResults();
+        });
+    }, 300);
+  }
+  
+  // Render search results
+  function renderResults(results, query) {
+    resultsList.innerHTML = results.map((item, index) => {
+      const hasDiscount = item.discount_percent > 0;
+      const priceHtml = hasDiscount 
+        ? `<span class="original-price">৳${item.original_price.toFixed(0)}</span>
+           <span class="current-price">৳${item.price.toFixed(0)}</span>
+           <span class="discount-badge">${item.discount_percent}% OFF</span>`
+        : `<span class="current-price">৳${item.price.toFixed(0)}</span>`;
+      
+      const stockHtml = !item.in_stock 
+        ? '<span class="out-of-stock mt-1 d-block">Out of Stock</span>' 
+        : '';
+      
+      // Highlight matching text
+      const highlightedTitle = highlightMatch(item.title, query);
+      
+      return `
+        <a href="category.php?id=${item.category_id}#item-${item.id}" 
+           class="search-result-item" 
+           data-index="${index}">
+          <img src="${item.image_url}" 
+               class="search-result-img" 
+               alt="${escapeHtml(item.title)}"
+               onerror="this.src='images/default-food.png'">
+          <div class="search-result-info">
+            <div class="search-result-title">${highlightedTitle}</div>
+            <div class="search-result-category">
+              <i class="bi bi-tag-fill me-1"></i>${escapeHtml(item.category)}
+            </div>
+            ${stockHtml}
+          </div>
+          <div class="search-result-price">
+            ${priceHtml}
+          </div>
+        </a>
+      `;
+    }).join('');
+    
+    currentHighlightIndex = -1;
+  }
+  
+  // Highlight matching text
+  function highlightMatch(text, query) {
+    const regex = new RegExp('(' + escapeRegex(query) + ')', 'gi');
+    return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+  }
+  
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  
+  function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  
+  // Show/hide functions
+  function showResults() {
+    resultsDropdown.classList.add('show');
+    noResultsEl.style.display = 'none';
+    resultsList.style.display = 'block';
+  }
+  
+  function hideResults() {
+    resultsDropdown.classList.remove('show');
+    currentResults = [];
+    currentHighlightIndex = -1;
+  }
+  
+  function showLoading() {
+    resultsDropdown.classList.add('show');
+    loadingEl.style.display = 'block';
+    resultsList.style.display = 'none';
+    noResultsEl.style.display = 'none';
+  }
+  
+  function hideLoading() {
+    loadingEl.style.display = 'none';
+  }
+  
+  function showNoResults() {
+    resultsDropdown.classList.add('show');
+    noResultsEl.style.display = 'block';
+    resultsList.style.display = 'none';
+  }
+  
+  // Input event listener
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    // Show/hide clear button
+    if (query.length > 0) {
+      clearBtn.classList.remove('d-none');
+    } else {
+      clearBtn.classList.add('d-none');
+      hideResults();
+    }
+    
+    performSearch(query);
+  });
+  
+  // Clear button
+  clearBtn.addEventListener('click', function() {
+    searchInput.value = '';
+    clearBtn.classList.add('d-none');
+    hideResults();
+    searchInput.focus();
+  });
+  
+  // Keyboard navigation
+  searchInput.addEventListener('keydown', function(e) {
+    const items = resultsList.querySelectorAll('.search-result-item');
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      currentHighlightIndex = Math.min(currentHighlightIndex + 1, items.length - 1);
+      updateHighlight(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      currentHighlightIndex = Math.max(currentHighlightIndex - 1, 0);
+      updateHighlight(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentHighlightIndex >= 0 && items[currentHighlightIndex]) {
+        items[currentHighlightIndex].click();
+      }
+    } else if (e.key === 'Escape') {
+      hideResults();
+      searchInput.blur();
+    }
+  });
+  
+  function updateHighlight(items) {
+    items.forEach((item, index) => {
+      if (index === currentHighlightIndex) {
+        item.classList.add('highlighted');
+        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        item.classList.remove('highlighted');
+      }
+    });
+  }
+  
+  // Close on click outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.navbar-search-container')) {
+      hideResults();
+    }
+  });
+  
+  // Reopen on focus if there's content
+  searchInput.addEventListener('focus', function() {
+    const query = this.value.trim();
+    if (query.length >= 2 && currentResults.length > 0) {
+      showResults();
+    }
+  });
+})();
+
+// Session alert for status-based logout
+function showSessionAlert(message, reason) {
+  // Check if we already showed this alert (to avoid duplicates on page reload)
+  const alertKey = 'session_alert_shown_' + reason;
+  if (sessionStorage.getItem(alertKey)) {
+    return;
+  }
+  
+  const alertHtml = `
+    <div class="alert alert-${reason === 'suspended' ? 'danger' : 'warning'} alert-dismissible fade show position-fixed shadow-lg" 
+         role="alert" 
+         style="top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; max-width: 500px; border-radius: 12px;">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-${reason === 'suspended' ? 'x-circle' : 'pause-circle'} me-3 fs-4"></i>
+        <div>
+          <strong>${reason === 'suspended' ? 'Account Suspended' : 'Account Paused'}</strong>
+          <p class="mb-0 small">${message}</p>
+        </div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', alertHtml);
+  sessionStorage.setItem(alertKey, 'true');
+  
+  // Auto-dismiss after 10 seconds
+  setTimeout(() => {
+    const alert = document.querySelector('.alert[role="alert"]');
+    if (alert) {
+      alert.remove();
+    }
+  }, 10000);
+}
+
+// Periodic session status check (every 60 seconds)
+(function() {
+  let lastStatusCheck = Date.now();
+  
+  setInterval(function() {
+    // Only check if user might be logged in
+    const authNavItem = document.getElementById('authNavItem');
+    if (!authNavItem || !authNavItem.classList.contains('dropdown')) {
+      return; // Not logged in
+    }
+    
+    fetch('auth/check_session.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.logged_in) {
+          // User was logged out (possibly due to status change)
+          if (data.reason && data.message) {
+            showSessionAlert(data.message, data.reason);
+          }
+          
+          // Reload the page to reflect logged out state
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      })
+      .catch(() => {
+        // Silently fail on network errors
+      });
+  }, 60000); // Check every 60 seconds
+})();
 </script>

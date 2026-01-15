@@ -466,17 +466,306 @@ $csrf_token = $_SESSION['csrf_token'];
       color: #94a3b8;
     }
     
-    /* Responsive */
+    /* ═══════════════════════════════════════════════════════════════════════
+       MOBILE RESPONSIVE STYLES
+       ═══════════════════════════════════════════════════════════════════════ */
+    
+    /* Hamburger Menu Toggle */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1050;
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+      transition: all 0.3s ease;
+    }
+    .sidebar-toggle:hover {
+      background: var(--primary-dark);
+      transform: scale(1.05);
+    }
+    .sidebar-toggle:active {
+      transform: scale(0.95);
+    }
+    
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.show {
+      display: block;
+      opacity: 1;
+    }
+    
+    /* Tablet Breakpoint (768px - 992px) */
     @media (max-width: 992px) {
+      .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .sidebar {
         transform: translateX(-100%);
-        transition: transform 0.3s;
+        transition: transform 0.3s ease;
+        z-index: 1001;
       }
       .sidebar.show {
         transform: translateX(0);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
       }
       .main-content {
         margin-left: 0;
+        padding: 20px;
+      }
+      .top-header {
+        padding-left: 70px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .stat-card {
+        padding: 16px;
+      }
+      .stat-value {
+        font-size: 1.5rem;
+      }
+      .card-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start !important;
+      }
+      .card-header h5 {
+        font-size: 1rem;
+      }
+    }
+    
+    /* Mobile Breakpoint (max-width: 768px) */
+    @media (max-width: 768px) {
+      :root {
+        --sidebar-width: 280px;
+      }
+      .main-content {
+        padding: 15px;
+      }
+      .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+        padding-left: 70px;
+      }
+      .page-title {
+        font-size: 1.25rem;
+      }
+      .admin-info {
+        font-size: 0.85rem;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .stat-card {
+        padding: 14px;
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+      }
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+        margin-right: 12px;
+        margin-bottom: 0;
+      }
+      .stat-value {
+        font-size: 1.25rem;
+      }
+      .stat-label {
+        font-size: 0.75rem;
+      }
+      
+      /* Responsive Tables */
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .table-custom {
+        min-width: 600px;
+      }
+      .table-custom th,
+      .table-custom td {
+        padding: 10px 8px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+      
+      /* Touch-friendly buttons */
+      .btn, .btn-sm {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 16px;
+      }
+      .btn-action {
+        width: 40px;
+        height: 40px;
+      }
+      
+      /* Cards */
+      .card-custom {
+        border-radius: 12px;
+      }
+      .card-header {
+        padding: 15px;
+      }
+      .card-body {
+        padding: 15px;
+      }
+      
+      /* Forms */
+      .form-control, .form-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+      
+      /* Modal adjustments */
+      .modal-dialog {
+        margin: 10px;
+        max-width: calc(100% - 20px);
+      }
+      .modal-header, .modal-body, .modal-footer {
+        padding: 15px;
+      }
+      
+      /* Report stat cards */
+      .report-stat-card {
+        padding: 16px;
+        gap: 12px;
+      }
+      .report-stat-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+      }
+      .report-stat-content h3 {
+        font-size: 1.3rem;
+      }
+      
+      /* Search box */
+      .search-box input {
+        min-height: 44px;
+      }
+      
+      /* Row adjustments */
+      .row.mb-3 > [class*="col-"] {
+        margin-bottom: 10px;
+      }
+      
+      /* Filter controls */
+      .profits-header .d-flex {
+        flex-direction: column;
+        width: 100%;
+      }
+      .profits-header .input-group {
+        width: 100% !important;
+      }
+      .profits-header .gap-2 {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      .profits-header .btn {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+    
+    /* Small Mobile (max-width: 480px) */
+    @media (max-width: 480px) {
+      .sidebar-toggle {
+        width: 44px;
+        height: 44px;
+        top: 12px;
+        left: 12px;
+        font-size: 1.25rem;
+      }
+      .main-content {
+        padding: 10px;
+      }
+      .top-header {
+        padding: 12px;
+        padding-left: 65px;
+      }
+      .page-title {
+        font-size: 1.1rem;
+      }
+      .stat-card {
+        padding: 12px;
+      }
+      .stat-icon {
+        width: 36px;
+        height: 36px;
+      }
+      .stat-value {
+        font-size: 1.1rem;
+      }
+      
+      /* Sidebar full width on very small screens */
+      .sidebar {
+        width: 100%;
+      }
+      
+      /* Table card layout for very small screens */
+      .table-custom.mobile-card-layout tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      .table-custom.mobile-card-layout tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border: none;
+      }
+      .table-custom.mobile-card-layout tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #64748b;
+      }
+      .table-custom.mobile-card-layout thead {
+        display: none;
+      }
+      
+      /* Button groups stack */
+      .btn-group-sm {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      
+      /* Alert positioning */
+      .alert-toast {
+        left: 10px;
+        right: 10px;
+        min-width: auto;
       }
     }
     
@@ -568,6 +857,14 @@ $csrf_token = $_SESSION['csrf_token'];
   </style>
 </head>
 <body>
+
+<!-- Mobile Hamburger Toggle Button -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+  <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Overlay (for closing sidebar on mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- Sidebar -->
 <aside class="sidebar">
@@ -876,9 +1173,14 @@ $csrf_token = $_SESSION['csrf_token'];
       <div class="card-custom">
         <div class="card-header">
           <h5><i class="bi bi-bag-check me-2"></i>All Orders</h5>
-          <button class="btn btn-outline-primary btn-sm" onclick="exportOrdersPDF()">
-            <i class="bi bi-file-pdf me-1"></i>Export PDF
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" onclick="openManualOrderModal()">
+              <i class="bi bi-plus-circle me-1"></i>Place Manual Order
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="exportOrdersPDF()">
+              <i class="bi bi-file-pdf me-1"></i>Export PDF
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <div class="row mb-3">
@@ -889,6 +1191,13 @@ $csrf_token = $_SESSION['csrf_token'];
                 <option value="Processing">Processing</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" id="orderTypeFilter">
+                <option value="">All Orders</option>
+                <option value="regular">Regular Orders</option>
+                <option value="manual">Manual Orders</option>
               </select>
             </div>
           </div>
@@ -954,25 +1263,143 @@ $csrf_token = $_SESSION['csrf_token'];
 
     <!-- Users Section -->
     <div id="users" class="section-tab">
+      <!-- User Stats Cards -->
+      <div class="row mb-4" id="userStatsRow">
+        <div class="col-md-3 col-6 mb-3">
+          <div class="stat-card" style="border-left: 4px solid #22c55e;">
+            <div class="stat-icon green"><i class="bi bi-people"></i></div>
+            <div class="stat-value" id="totalUsersCount">0</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="stat-card" style="border-left: 4px solid #22c55e;">
+            <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="activeUsersCount">0</div>
+            <div class="stat-label">Active</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+            <div class="stat-icon orange"><i class="bi bi-pause-circle"></i></div>
+            <div class="stat-value" id="pausedUsersCount">0</div>
+            <div class="stat-label">Paused</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+          <div class="stat-card" style="border-left: 4px solid #ef4444;">
+            <div class="stat-icon" style="background: #fee2e2; color: #ef4444;"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="suspendedUsersCount">0</div>
+            <div class="stat-label">Suspended</div>
+          </div>
+        </div>
+      </div>
+      
       <div class="card-custom">
         <div class="card-header">
-          <h5><i class="bi bi-people me-2"></i>Registered Users</h5>
+          <h5><i class="bi bi-people me-2"></i>User Management</h5>
         </div>
-        <div class="card-body p-0">
-          <table class="table table-custom" id="usersTable">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody id="usersTableBody">
-              <!-- Loaded via AJAX -->
-            </tbody>
-          </table>
+        <div class="card-body">
+          <!-- Filters -->
+          <div class="row mb-3">
+            <div class="col-md-4 mb-2 mb-md-0">
+              <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" id="userSearchInput" placeholder="Search users...">
+              </div>
+            </div>
+            <div class="col-md-3 mb-2 mb-md-0">
+              <select class="form-select" id="userStatusFilter">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="table table-custom" id="usersTable">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Contact</th>
+                  <th>Orders</th>
+                  <th>Total Spent</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Loaded via AJAX -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div class="modal fade" id="userDetailsModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-person me-2"></i>User Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="userDetailId">
+            <div class="text-center mb-4">
+              <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                   style="width: 80px; height: 80px; font-size: 2rem;">
+                <span id="userDetailAvatar">U</span>
+              </div>
+              <h5 class="mt-3 mb-0" id="userDetailName">-</h5>
+              <small class="text-muted" id="userDetailUsername">@username</small>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label small text-muted">Email</label>
+                <p class="mb-0" id="userDetailEmail">-</p>
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label small text-muted">Phone</label>
+                <p class="mb-0" id="userDetailPhone">-</p>
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label small text-muted">Total Orders</label>
+                <p class="mb-0 fw-bold" id="userDetailOrders">0</p>
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label small text-muted">Total Spent</label>
+                <p class="mb-0 fw-bold text-success" id="userDetailSpent">৳0</p>
+              </div>
+              <div class="col-12 mb-3">
+                <label class="form-label small text-muted">Member Since</label>
+                <p class="mb-0" id="userDetailJoined">-</p>
+              </div>
+            </div>
+            <hr>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Account Status</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-success user-status-btn" data-status="active">
+                  <i class="bi bi-check-circle me-1"></i>Active
+                </button>
+                <button type="button" class="btn btn-outline-warning user-status-btn" data-status="paused">
+                  <i class="bi bi-pause-circle me-1"></i>Pause
+                </button>
+                <button type="button" class="btn btn-outline-danger user-status-btn" data-status="suspended">
+                  <i class="bi bi-x-circle me-1"></i>Suspend
+                </button>
+              </div>
+              <small class="text-muted mt-2 d-block" id="statusChangeInfo"></small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1653,6 +2080,167 @@ $csrf_token = $_SESSION['csrf_token'];
 
   </div>
 </main>
+
+<!-- Manual Order Modal -->
+<div class="modal fade" id="manualOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cart-plus me-2"></i>Place Manual Order</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <!-- Left: Item Selection -->
+          <div class="col-lg-7">
+            <div class="mb-3">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="manualOrderSearch" placeholder="Search menu items...">
+              </div>
+            </div>
+            <div class="manual-order-items-grid" id="manualOrderItemsGrid" style="max-height: 400px; overflow-y: auto;">
+              <!-- Items will be loaded here -->
+            </div>
+          </div>
+          
+          <!-- Right: Cart -->
+          <div class="col-lg-5">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-cart3 me-2"></i>Order Cart</h6>
+              </div>
+              <div class="card-body p-0">
+                <div id="manualOrderCart" style="max-height: 250px; overflow-y: auto;">
+                  <div class="text-center text-muted py-4" id="emptyCartMessage">
+                    <i class="bi bi-cart text-muted fs-1"></i>
+                    <p class="mb-0 mt-2">Cart is empty</p>
+                    <small>Click items on the left to add</small>
+                  </div>
+                  <table class="table table-sm mb-0" id="manualOrderCartTable" style="display: none;">
+                    <tbody id="manualOrderCartBody">
+                    </tbody>
+                  </table>
+                </div>
+                <div class="border-top p-3">
+                  <div class="d-flex justify-content-between mb-2">
+                    <strong>Total:</strong>
+                    <strong class="text-success fs-5" id="manualOrderTotal">৳0</strong>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Customer Name (optional)</label>
+                    <input type="text" class="form-control form-control-sm" id="manualOrderCustomer" placeholder="Walk-in Customer">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Special Instructions (optional)</label>
+                    <textarea class="form-control form-control-sm" id="manualOrderNotes" rows="2" placeholder="Any special notes..."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="clearManualOrderCart()">
+          <i class="bi bi-trash me-1"></i>Clear Cart
+        </button>
+        <button type="button" class="btn btn-success" onclick="submitManualOrder()" id="submitManualOrderBtn" disabled>
+          <i class="bi bi-check-circle me-1"></i>Place Order
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Manual Order Styles */
+  .manual-order-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 5px;
+  }
+  .manual-order-item {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  .manual-order-item:hover {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    transform: translateY(-2px);
+  }
+  .manual-order-item.out-of-stock {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .manual-order-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .manual-order-item .item-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .manual-order-item .item-price {
+    color: #16a34a;
+    font-weight: 700;
+  }
+  .manual-order-item .item-stock {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+  .manual-order-item .item-stock.low {
+    color: #f59e0b;
+  }
+  .manual-order-item .item-stock.out {
+    color: #ef4444;
+  }
+  
+  /* Cart item styles */
+  #manualOrderCartBody tr td {
+    vertical-align: middle;
+    padding: 8px;
+  }
+  .cart-item-qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cart-item-qty button {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cart-item-qty span {
+    min-width: 20px;
+    text-align: center;
+    font-weight: 600;
+  }
+  
+  @media (max-width: 991px) {
+    .manual-order-items-grid {
+      grid-template-columns: repeat(2, 1fr);
+      max-height: 250px !important;
+    }
+  }
+</style>
 
 <!-- Menu Item Modal -->
 <div class="modal fade" id="menuModal" tabindex="-1">
@@ -2656,27 +3244,229 @@ document.getElementById('orderStatusFilter')?.addEventListener('change', functio
   });
 });
 
-// Load Users
-async function loadUsers() {
+// Load Users with enhanced functionality
+async function loadUsers(statusFilter = '', searchQuery = '') {
+  try {
+    let url = 'api/get_users.php?';
+    if (statusFilter) url += 'status=' + encodeURIComponent(statusFilter) + '&';
+    if (searchQuery) url += 'search=' + encodeURIComponent(searchQuery);
+    
+    const response = await fetch(url, { credentials: 'same-origin' });
+    const result = await response.json();
+    
+    if (result.success) {
+      // Update stat counts
+      if (result.counts) {
+        document.getElementById('totalUsersCount').textContent = result.counts.total || 0;
+        document.getElementById('activeUsersCount').textContent = result.counts.active || 0;
+        document.getElementById('pausedUsersCount').textContent = result.counts.paused || 0;
+        document.getElementById('suspendedUsersCount').textContent = result.counts.suspended || 0;
+      }
+      
+      const tbody = document.getElementById('usersTableBody');
+      
+      if (result.users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No users found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = result.users.map(u => {
+        const status = u.status || 'active';
+        let statusBadge = '';
+        
+        switch(status) {
+          case 'active':
+            statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>';
+            break;
+          case 'paused':
+            statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-pause-circle me-1"></i>Paused</span>';
+            break;
+          case 'suspended':
+            statusBadge = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Suspended</span>';
+            break;
+        }
+        
+        const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : 'U';
+        const joinDate = new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        return `
+          <tr data-user-id="${u.id}">
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                  ${avatar}
+                </div>
+                <div>
+                  <strong>${escapeHtml(u.full_name)}</strong>
+                  <br><small class="text-muted">@${escapeHtml(u.username)}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="small">${escapeHtml(u.email)}</div>
+              <div class="small text-muted">${u.phone ? escapeHtml(u.phone) : 'No phone'}</div>
+            </td>
+            <td><span class="badge bg-light text-dark">${u.total_orders} orders</span></td>
+            <td><strong class="text-success">৳${formatNumber(u.total_spent)}</strong></td>
+            <td>${statusBadge}</td>
+            <td><small>${joinDate}</small></td>
+            <td>
+              <button class="btn-action edit" onclick="openUserDetails(${u.id})" title="View/Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <div class="btn-group btn-group-sm ms-1">
+                <button type="button" class="btn btn-sm ${status === 'active' ? 'btn-success' : 'btn-outline-success'}" 
+                        onclick="updateUserStatus(${u.id}, 'active')" title="Set Active" ${status === 'active' ? 'disabled' : ''}>
+                  <i class="bi bi-check"></i>
+                </button>
+                <button type="button" class="btn btn-sm ${status === 'paused' ? 'btn-warning' : 'btn-outline-warning'}" 
+                        onclick="updateUserStatus(${u.id}, 'paused')" title="Pause" ${status === 'paused' ? 'disabled' : ''}>
+                  <i class="bi bi-pause"></i>
+                </button>
+                <button type="button" class="btn btn-sm ${status === 'suspended' ? 'btn-danger' : 'btn-outline-danger'}" 
+                        onclick="updateUserStatus(${u.id}, 'suspended')" title="Suspend" ${status === 'suspended' ? 'disabled' : ''}>
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.error('Error loading users:', err);
+    document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load users</td></tr>';
+  }
+}
+
+// User status update function
+async function updateUserStatus(userId, status) {
+  if (!confirm('Are you sure you want to set this user to ' + status.toUpperCase() + '?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('api/update_user_status.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ user_id: userId, status: status })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showAlert('User status updated to ' + status.toUpperCase(), 'success');
+      loadUsers(
+        document.getElementById('userStatusFilter').value,
+        document.getElementById('userSearchInput').value
+      );
+    } else {
+      showAlert(result.message || 'Failed to update status', 'danger');
+    }
+  } catch (err) {
+    console.error('Error updating user status:', err);
+    showAlert('Error updating user status', 'danger');
+  }
+}
+
+// Open user details modal
+let currentUserData = null;
+async function openUserDetails(userId) {
   try {
     const response = await fetch('api/get_users.php', { credentials: 'same-origin' });
     const result = await response.json();
+    
     if (result.success) {
-      const tbody = document.getElementById('usersTableBody');
-      tbody.innerHTML = result.users.map(u => `
-        <tr>
-          <td>${u.id}</td>
-          <td><strong>${u.full_name}</strong></td>
-          <td>@${u.username}</td>
-          <td>${u.email}</td>
-          <td>${new Date(u.created_at).toLocaleDateString()}</td>
-        </tr>
-      `).join('');
+      const user = result.users.find(u => u.id == userId);
+      if (!user) {
+        showAlert('User not found', 'warning');
+        return;
+      }
+      
+      currentUserData = user;
+      
+      // Populate modal
+      document.getElementById('userDetailId').value = user.id;
+      document.getElementById('userDetailAvatar').textContent = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
+      document.getElementById('userDetailName').textContent = user.full_name;
+      document.getElementById('userDetailUsername').textContent = '@' + user.username;
+      document.getElementById('userDetailEmail').textContent = user.email;
+      document.getElementById('userDetailPhone').textContent = user.phone || 'Not provided';
+      document.getElementById('userDetailOrders').textContent = user.total_orders;
+      document.getElementById('userDetailSpent').textContent = '৳' + formatNumber(user.total_spent);
+      document.getElementById('userDetailJoined').textContent = new Date(user.created_at).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      });
+      
+      // Update status buttons
+      const statusBtns = document.querySelectorAll('.user-status-btn');
+      statusBtns.forEach(btn => {
+        btn.classList.remove('btn-success', 'btn-warning', 'btn-danger');
+        btn.classList.add('btn-outline-success', 'btn-outline-warning', 'btn-outline-danger');
+        
+        if (btn.dataset.status === user.status) {
+          btn.classList.remove('btn-outline-' + (btn.dataset.status === 'active' ? 'success' : btn.dataset.status === 'paused' ? 'warning' : 'danger'));
+          btn.classList.add('btn-' + (btn.dataset.status === 'active' ? 'success' : btn.dataset.status === 'paused' ? 'warning' : 'danger'));
+        }
+      });
+      
+      // Status change info
+      const infoEl = document.getElementById('statusChangeInfo');
+      if (user.status_changed_at) {
+        infoEl.textContent = 'Status last changed: ' + new Date(user.status_changed_at).toLocaleString();
+      } else {
+        infoEl.textContent = '';
+      }
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+      modal.show();
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error loading user details:', err);
+    showAlert('Failed to load user details', 'danger');
   }
 }
+
+// User status button click handlers in modal
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.user-status-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const userId = document.getElementById('userDetailId').value;
+      const status = this.dataset.status;
+      
+      if (currentUserData && currentUserData.status === status) {
+        return; // Already this status
+      }
+      
+      await updateUserStatus(userId, status);
+      
+      // Close modal and refresh
+      bootstrap.Modal.getInstance(document.getElementById('userDetailsModal')).hide();
+    });
+  });
+  
+  // User search and filter handlers
+  const userSearchInput = document.getElementById('userSearchInput');
+  const userStatusFilter = document.getElementById('userStatusFilter');
+  
+  if (userSearchInput) {
+    let searchTimeout;
+    userSearchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadUsers(userStatusFilter.value, this.value);
+      }, 300);
+    });
+  }
+  
+  if (userStatusFilter) {
+    userStatusFilter.addEventListener('change', function() {
+      loadUsers(this.value, userSearchInput ? userSearchInput.value : '');
+    });
+  }
+});
 
 // Load Complaints
 async function loadComplaints() {
@@ -4168,6 +4958,362 @@ function exportProfitPDF() {
   doc.save('GreenBites_Profit_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
   showAlert('Profit report exported successfully!', 'success');
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MANUAL ORDER FUNCTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let manualOrderCart = {};
+let allMenuItemsForOrder = [];
+
+function openManualOrderModal() {
+  // Reset cart
+  manualOrderCart = {};
+  updateManualOrderCartUI();
+  
+  // Load menu items
+  loadManualOrderItems();
+  
+  // Open modal
+  const modal = new bootstrap.Modal(document.getElementById('manualOrderModal'));
+  modal.show();
+}
+
+function loadManualOrderItems(searchQuery = '') {
+  const grid = document.getElementById('manualOrderItemsGrid');
+  grid.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-success"></div></div>';
+  
+  fetch('api/get_menu.php')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.data) {
+        allMenuItemsForOrder = data.data;
+        renderManualOrderItems(allMenuItemsForOrder, searchQuery);
+      } else {
+        grid.innerHTML = '<div class="text-center text-muted py-4">Failed to load items</div>';
+      }
+    })
+    .catch(() => {
+      grid.innerHTML = '<div class="text-center text-muted py-4">Error loading items</div>';
+    });
+}
+
+function renderManualOrderItems(items, searchQuery = '') {
+  const grid = document.getElementById('manualOrderItemsGrid');
+  
+  // Filter by search
+  let filteredItems = items;
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filteredItems = items.filter(item => 
+      item.title.toLowerCase().includes(query) || 
+      (item.category_name && item.category_name.toLowerCase().includes(query))
+    );
+  }
+  
+  if (filteredItems.length === 0) {
+    grid.innerHTML = '<div class="text-center text-muted py-4">No items found</div>';
+    return;
+  }
+  
+  grid.innerHTML = filteredItems.map(item => {
+    const qty = item.quantity || 0;
+    const isOut = qty <= 0;
+    const isLow = qty > 0 && qty <= 5;
+    
+    // Calculate final price
+    const originalPrice = parseFloat(item.price);
+    const discount = parseInt(item.discount_percent || 0);
+    const finalPrice = discount > 0 ? originalPrice - (originalPrice * discount / 100) : originalPrice;
+    
+    let stockClass = '';
+    let stockText = qty + ' in stock';
+    if (isOut) {
+      stockClass = 'out';
+      stockText = 'Out of Stock';
+    } else if (isLow) {
+      stockClass = 'low';
+      stockText = qty + ' left';
+    }
+    
+    return `
+      <div class="manual-order-item ${isOut ? 'out-of-stock' : ''}" 
+           onclick="${isOut ? '' : 'addToManualOrderCart(' + item.id + ', \'' + escapeQuotes(item.title) + '\', ' + finalPrice + ', ' + qty + ')'}"
+           title="${item.title}">
+        <img src="${item.image_url || 'https://via.placeholder.com/60'}" 
+             alt="${escapeHtml(item.title)}"
+             onerror="this.src='https://via.placeholder.com/60?text=No+Image'">
+        <div class="item-title">${escapeHtml(item.title)}</div>
+        <div class="item-price">৳${formatNumber(finalPrice)}</div>
+        <div class="item-stock ${stockClass}">${stockText}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeQuotes(str) {
+  return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function addToManualOrderCart(id, title, price, maxQty) {
+  if (manualOrderCart[id]) {
+    // Already in cart, increase quantity
+    if (manualOrderCart[id].quantity < maxQty) {
+      manualOrderCart[id].quantity++;
+    } else {
+      showAlert('Maximum stock reached for ' + title, 'warning');
+      return;
+    }
+  } else {
+    // Add new item
+    manualOrderCart[id] = {
+      id: id,
+      title: title,
+      price: price,
+      quantity: 1,
+      maxQty: maxQty
+    };
+  }
+  
+  updateManualOrderCartUI();
+}
+
+function removeFromManualOrderCart(id) {
+  delete manualOrderCart[id];
+  updateManualOrderCartUI();
+}
+
+function updateManualOrderCartQty(id, delta) {
+  if (!manualOrderCart[id]) return;
+  
+  const newQty = manualOrderCart[id].quantity + delta;
+  
+  if (newQty <= 0) {
+    removeFromManualOrderCart(id);
+  } else if (newQty > manualOrderCart[id].maxQty) {
+    showAlert('Maximum stock reached', 'warning');
+  } else {
+    manualOrderCart[id].quantity = newQty;
+    updateManualOrderCartUI();
+  }
+}
+
+function updateManualOrderCartUI() {
+  const cartBody = document.getElementById('manualOrderCartBody');
+  const cartTable = document.getElementById('manualOrderCartTable');
+  const emptyMessage = document.getElementById('emptyCartMessage');
+  const totalEl = document.getElementById('manualOrderTotal');
+  const submitBtn = document.getElementById('submitManualOrderBtn');
+  
+  const cartItems = Object.values(manualOrderCart);
+  
+  if (cartItems.length === 0) {
+    cartTable.style.display = 'none';
+    emptyMessage.style.display = 'block';
+    totalEl.textContent = '৳0';
+    submitBtn.disabled = true;
+    return;
+  }
+  
+  cartTable.style.display = 'table';
+  emptyMessage.style.display = 'none';
+  submitBtn.disabled = false;
+  
+  let total = 0;
+  
+  cartBody.innerHTML = cartItems.map(item => {
+    const subtotal = item.price * item.quantity;
+    total += subtotal;
+    
+    return `
+      <tr>
+        <td style="width: 50%;">
+          <div class="fw-semibold small">${escapeHtml(item.title)}</div>
+          <div class="text-muted small">৳${formatNumber(item.price)} each</div>
+        </td>
+        <td>
+          <div class="cart-item-qty">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateManualOrderCartQty(${item.id}, -1)">
+              <i class="bi bi-dash"></i>
+            </button>
+            <span>${item.quantity}</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateManualOrderCartQty(${item.id}, 1)">
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+        </td>
+        <td class="text-end">
+          <strong class="text-success">৳${formatNumber(subtotal)}</strong>
+          <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="removeFromManualOrderCart(${item.id})">
+            <i class="bi bi-x"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  totalEl.textContent = '৳' + formatNumber(total);
+}
+
+function clearManualOrderCart() {
+  if (Object.keys(manualOrderCart).length === 0) return;
+  
+  if (confirm('Clear all items from cart?')) {
+    manualOrderCart = {};
+    updateManualOrderCartUI();
+  }
+}
+
+function submitManualOrder() {
+  const cartItems = Object.values(manualOrderCart);
+  if (cartItems.length === 0) {
+    showAlert('Cart is empty', 'warning');
+    return;
+  }
+  
+  const customerName = document.getElementById('manualOrderCustomer').value.trim() || 'Walk-in Customer';
+  const notes = document.getElementById('manualOrderNotes').value.trim();
+  
+  const submitBtn = document.getElementById('submitManualOrderBtn');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+  
+  const orderData = {
+    items: cartItems.map(item => ({ id: item.id, quantity: item.quantity })),
+    customer_name: customerName,
+    special_instructions: notes
+  };
+  
+  fetch('api/place_manual_order.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData)
+  })
+    .then(r => r.json())
+    .then(data => {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Place Order';
+      
+      if (data.success) {
+        showAlert('Order #' + data.order_id + ' placed successfully! Bill: ' + data.bill_number, 'success');
+        
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById('manualOrderModal')).hide();
+        
+        // Reset cart
+        manualOrderCart = {};
+        document.getElementById('manualOrderCustomer').value = '';
+        document.getElementById('manualOrderNotes').value = '';
+        
+        // Refresh orders if on orders page
+        if (document.getElementById('orders').classList.contains('active')) {
+          loadOrders();
+        }
+        
+        // Update stats
+        loadStats();
+      } else {
+        showAlert(data.message || 'Failed to place order', 'danger');
+      }
+    })
+    .catch(err => {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Place Order';
+      showAlert('Error placing order', 'danger');
+    });
+}
+
+// Search handler for manual order items
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('manualOrderSearch');
+  if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value;
+      searchTimeout = setTimeout(() => {
+        renderManualOrderItems(allMenuItemsForOrder, query);
+      }, 200);
+    });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE SIDEBAR TOGGLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+(function() {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const toggleIcon = sidebarToggle.querySelector('i');
+  
+  function openSidebar() {
+    sidebar.classList.add('show');
+    sidebarOverlay.classList.add('show');
+    toggleIcon.classList.remove('bi-list');
+    toggleIcon.classList.add('bi-x-lg');
+    document.body.style.overflow = 'hidden'; // Prevent scroll when sidebar open
+  }
+  
+  function closeSidebar() {
+    sidebar.classList.remove('show');
+    sidebarOverlay.classList.remove('show');
+    toggleIcon.classList.remove('bi-x-lg');
+    toggleIcon.classList.add('bi-list');
+    document.body.style.overflow = ''; // Restore scroll
+  }
+  
+  // Toggle sidebar on button click
+  sidebarToggle.addEventListener('click', function() {
+    if (sidebar.classList.contains('show')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+  
+  // Close sidebar when clicking overlay
+  sidebarOverlay.addEventListener('click', closeSidebar);
+  
+  // Close sidebar when clicking a nav link (on mobile)
+  document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 992) {
+        closeSidebar();
+      }
+    });
+  });
+  
+  // Close sidebar on escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && sidebar.classList.contains('show')) {
+      closeSidebar();
+    }
+  });
+  
+  // Handle window resize - close sidebar if resized above mobile breakpoint
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 992) {
+      closeSidebar();
+    }
+  });
+  
+  // Handle swipe gestures for mobile (swipe left to close)
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  sidebar.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  
+  sidebar.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 50) { // Swipe left
+      closeSidebar();
+    }
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
