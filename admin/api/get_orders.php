@@ -18,8 +18,10 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-// Fetch orders with user info
-$sql = "SELECT o.*, u.full_name, u.email 
+// Fetch orders with user info (handle manual orders where user_id is NULL)
+$sql = "SELECT o.*, 
+        COALESCE(u.full_name, o.student_id, 'Walk-in Customer') as full_name, 
+        COALESCE(u.email, 'Manual Order') as email 
         FROM orders o 
         LEFT JOIN users u ON o.user_id = u.id 
         ORDER BY o.order_date DESC 

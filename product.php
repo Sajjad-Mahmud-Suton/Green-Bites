@@ -460,13 +460,20 @@ if ($singleProduct) {
       }
     }
     
-    function addToCartFromProduct(id, title, price) {
+    async function addToCartFromProduct(id, title, price) {
+      // Check login status first
+      const loggedIn = await checkLoginStatus();
+      if (!loggedIn) {
+        showLoginModal();
+        return;
+      }
+      
       const qty = parseInt(document.getElementById('productQty').value) || 1;
       
       // Use the cart.js addToCart function with quantity
-      if (typeof window.cart !== 'undefined') {
+      if (typeof addToCart !== 'undefined') {
         for (let i = 0; i < qty; i++) {
-          addToCart(id);
+          addToCart(id, title, price);
         }
         
         // Show success toast
@@ -479,12 +486,36 @@ if ($singleProduct) {
         if (existingIndex !== -1) {
           cart[existingIndex].quantity += qty;
         } else {
-          cart.push({ id: id, quantity: qty });
+          cart.push({ id: id, title: title, price: price, quantity: qty });
         }
         
         localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartCount();
+        if (typeof updateCartCount !== 'undefined') updateCartCount();
         showToast(`Added ${qty}x ${title} to cart!`, 'success');
+      }
+    }
+    
+    // Check login status
+    async function checkLoginStatus() {
+      try {
+        const response = await fetch('auth/check_session.php');
+        const data = await response.json();
+        return data.logged_in || false;
+      } catch (error) {
+        console.error('Login check error:', error);
+        return false;
+      }
+    }
+    
+    // Show login required modal
+    function showLoginModal() {
+      const modal = document.getElementById('loginRequiredModal');
+      if (modal) {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+      } else {
+        // Fallback - redirect to login
+        window.location.href = 'login.php';
       }
     }
     

@@ -100,9 +100,14 @@ while ($row = mysqli_fetch_assoc($catResult)) {
     $categories[] = $row;
 }
 
-// Get recent orders
+// Get recent orders (handle manual orders where user_id is NULL)
 $recentOrders = [];
-$orderResult = mysqli_query($conn, "SELECT o.*, u.full_name, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.order_date DESC LIMIT 10");
+$orderResult = mysqli_query($conn, "SELECT o.*, 
+    COALESCE(u.full_name, o.student_id, 'Walk-in Customer') as full_name, 
+    COALESCE(u.email, 'Manual Order') as email 
+    FROM orders o 
+    LEFT JOIN users u ON o.user_id = u.id 
+    ORDER BY o.order_date DESC LIMIT 50");
 while ($row = mysqli_fetch_assoc($orderResult)) {
     $recentOrders[] = $row;
 }
@@ -2481,7 +2486,7 @@ $csrf_token = $_SESSION['csrf_token'];
 <script>
 const csrfToken = '<?php echo $csrf_token; ?>';
 const menuData = <?php echo json_encode($menuItems); ?>;
-const ordersData = <?php echo json_encode($recentOrders); ?>;
+let ordersData = <?php echo json_encode($recentOrders); ?>;
 let lastComplaintCount = <?php echo $stats['total_complaints']; ?>;
 
 // Check for new complaints every 30 seconds
@@ -2545,6 +2550,7 @@ function checkOrdersUpdate() {
         const newData = JSON.stringify(result.orders);
         if (newData !== lastOrdersData) {
           lastOrdersData = newData;
+          ordersData = result.orders; // Update global ordersData
           refreshOrdersTable(result.orders);
           
           // Show notification for new orders
@@ -2553,6 +2559,20 @@ function checkOrdersUpdate() {
       }
     })
     .catch(err => console.error('Orders check error:', err));
+}
+
+// Load/Refresh orders explicitly (called after manual order)
+function loadOrders() {
+  fetch('api/get_orders.php', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success && result.orders) {
+        lastOrdersData = JSON.stringify(result.orders);
+        ordersData = result.orders; // Update global ordersData
+        refreshOrdersTable(result.orders);
+      }
+    })
+    .catch(err => console.error('Orders load error:', err));
 }
 
 // Refresh orders table
@@ -5196,16 +5216,20 @@ function submitManualOrder() {
         
         // Reset cart
         manualOrderCart = {};
+        updateManualOrderCartUI();
         document.getElementById('manualOrderCustomer').value = '';
         document.getElementById('manualOrderNotes').value = '';
         
-        // Refresh orders if on orders page
-        if (document.getElementById('orders').classList.contains('active')) {
-          loadOrders();
-        }
+        // Always refresh orders to include the new order
+        loadOrders();
+        
+        // Refresh menu stock (to show updated quantities)
+        refreshMenuStock();
         
         // Update stats
-        loadStats();
+        if (typeof loadStats === 'function') {
+          loadStats();
+        }
       } else {
         showAlert(data.message || 'Failed to place order', 'danger');
       }
