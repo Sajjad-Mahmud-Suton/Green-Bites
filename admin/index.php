@@ -1192,6 +1192,20 @@ $csrf_token = $_SESSION['csrf_token'];
           </div>
         </div>
         <div class="card-body">
+          <!-- Date Filter Stats Card -->
+          <div class="row mb-3">
+            <div class="col-12">
+              <div class="alert alert-success d-flex align-items-center justify-content-between mb-0" id="orderDateStatsCard" style="display: none !important;">
+                <div>
+                  <i class="bi bi-calendar-check me-2"></i>
+                  <strong id="orderDateStatsText">Showing all orders</strong>
+                </div>
+                <button class="btn btn-sm btn-outline-success" onclick="clearOrderDateFilter()">
+                  <i class="bi bi-x-lg me-1"></i>Clear Filter
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="row mb-3">
             <div class="col-md-3">
               <select class="form-select" id="orderStatusFilter">
@@ -1208,6 +1222,14 @@ $csrf_token = $_SESSION['csrf_token'];
                 <option value="regular">Regular Orders</option>
                 <option value="manual">Manual Orders</option>
               </select>
+            </div>
+            <div class="col-md-3">
+              <input type="date" class="form-control" id="orderDateFilter" onchange="filterOrdersByDate()" title="Filter by date">
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-secondary w-100" onclick="clearOrderDateFilter()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+              </button>
             </div>
           </div>
           <div class="table-responsive">
@@ -1429,7 +1451,43 @@ $csrf_token = $_SESSION['csrf_token'];
             </button>
           </div>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body">
+          <!-- Date Filter Stats Card for Complaints -->
+          <div class="row mb-3">
+            <div class="col-12">
+              <div class="alert alert-danger d-flex align-items-center justify-content-between mb-0" id="complaintDateStatsCard" style="display: none !important;">
+                <div>
+                  <i class="bi bi-calendar-check me-2"></i>
+                  <strong id="complaintDateStatsText">Showing all complaints</strong>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="clearComplaintDateFilter()">
+                  <i class="bi bi-x-lg me-1"></i>Clear Filter
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Complaint Filters -->
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <select class="form-select" id="complaintStatusFilter" onchange="filterComplaints()">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="seen">Seen</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input type="date" class="form-control" id="complaintDateFilter" onchange="filterComplaints()" title="Filter by date">
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-secondary w-100" onclick="clearComplaintDateFilter()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
           <table class="table table-custom" id="complaintsTable">
             <thead>
               <tr>
@@ -1447,6 +1505,7 @@ $csrf_token = $_SESSION['csrf_token'];
               <!-- Loaded via AJAX -->
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
@@ -3333,11 +3392,105 @@ document.getElementById('categoryFilter')?.addEventListener('change', function()
 });
 
 document.getElementById('orderStatusFilter')?.addEventListener('change', function() {
-  const status = this.value;
-  document.querySelectorAll('#ordersTable tbody tr').forEach(row => {
-    row.style.display = (!status || row.dataset.status == status) ? '' : 'none';
-  });
+  filterOrders();
 });
+
+document.getElementById('orderTypeFilter')?.addEventListener('change', function() {
+  filterOrders();
+});
+
+// Order date filter function
+function filterOrdersByDate() {
+  filterOrders();
+}
+
+// Combined order filter function
+function filterOrders() {
+  const statusFilter = document.getElementById('orderStatusFilter')?.value || '';
+  const typeFilter = document.getElementById('orderTypeFilter')?.value || '';
+  const dateFilter = document.getElementById('orderDateFilter')?.value || '';
+  
+  let visibleCount = 0;
+  let totalAmount = 0;
+  
+  document.querySelectorAll('#ordersTable tbody tr').forEach(row => {
+    const status = row.dataset.status || '';
+    const orderDate = row.querySelector('td:nth-child(8)')?.textContent?.trim() || '';
+    const email = row.querySelector('td:nth-child(3) small')?.textContent?.trim() || '';
+    const isManual = email === 'Manual Order' || email === '';
+    
+    // Status filter
+    const statusMatch = !statusFilter || status === statusFilter;
+    
+    // Type filter
+    let typeMatch = true;
+    if (typeFilter === 'manual') typeMatch = isManual;
+    if (typeFilter === 'regular') typeMatch = !isManual;
+    
+    // Date filter
+    let dateMatch = true;
+    if (dateFilter) {
+      // Parse the displayed date and compare with filter date
+      const rowDateStr = orderDate;
+      const filterDateObj = new Date(dateFilter);
+      const rowDateObj = new Date(rowDateStr);
+      
+      // Compare only date parts (year, month, day)
+      dateMatch = filterDateObj.toDateString() === rowDateObj.toDateString();
+    }
+    
+    const showRow = statusMatch && typeMatch && dateMatch;
+    row.style.display = showRow ? '' : 'none';
+    
+    if (showRow) {
+      visibleCount++;
+      // Extract total amount from the row
+      const totalCell = row.querySelector('td:nth-child(5) strong');
+      if (totalCell) {
+        const amountText = totalCell.textContent.replace(/[৳,]/g, '').trim();
+        totalAmount += parseFloat(amountText) || 0;
+      }
+    }
+  });
+  
+  // Update stats card
+  const statsCard = document.getElementById('orderDateStatsCard');
+  const statsText = document.getElementById('orderDateStatsText');
+  
+  if (dateFilter || statusFilter || typeFilter) {
+    statsCard.style.display = 'flex !important';
+    statsCard.classList.remove('d-none');
+    statsCard.style.cssText = 'display: flex !important;';
+    
+    let filterDesc = [];
+    if (dateFilter) {
+      const dateObj = new Date(dateFilter);
+      filterDesc.push(dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    }
+    if (statusFilter) filterDesc.push(statusFilter + ' status');
+    if (typeFilter) filterDesc.push(typeFilter + ' orders');
+    
+    statsText.innerHTML = `Showing <strong>${visibleCount}</strong> order(s) for ${filterDesc.join(', ')} | Total: <strong>৳${totalAmount.toLocaleString()}</strong>`;
+  } else {
+    statsCard.style.cssText = 'display: none !important;';
+    statsCard.classList.add('d-none');
+  }
+}
+
+// Clear order date filter
+function clearOrderDateFilter() {
+  document.getElementById('orderDateFilter').value = '';
+  document.getElementById('orderStatusFilter').value = '';
+  document.getElementById('orderTypeFilter').value = '';
+  
+  document.querySelectorAll('#ordersTable tbody tr').forEach(row => {
+    row.style.display = '';
+  });
+  
+  const statsCard = document.getElementById('orderDateStatsCard');
+  statsCard.style.cssText = 'display: none !important;';
+  statsCard.classList.add('d-none');
+}
 
 // Load Users with enhanced functionality
 async function loadUsers(statusFilter = '', searchQuery = '') {
@@ -3630,6 +3783,78 @@ async function loadComplaints() {
 function escapeHtml(text) {
   if (!text) return '';
   return text.replace(/[&<>"'`]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[m]));
+}
+
+// Filter complaints by status and date
+function filterComplaints() {
+  const statusFilter = document.getElementById('complaintStatusFilter')?.value || '';
+  const dateFilter = document.getElementById('complaintDateFilter')?.value || '';
+  
+  let visibleCount = 0;
+  
+  document.querySelectorAll('#complaintsTableBody tr').forEach(row => {
+    const statusCell = row.querySelector('td:nth-child(6)');
+    const dateCell = row.querySelector('td:nth-child(7) small');
+    
+    if (!statusCell || !dateCell) return;
+    
+    // Get status from the badge text
+    const statusText = statusCell.textContent.trim().toLowerCase().replace(' ', '_');
+    const dateText = dateCell.textContent.trim();
+    
+    // Status filter
+    const statusMatch = !statusFilter || statusText.includes(statusFilter.replace('_', ' ')) || statusText === statusFilter;
+    
+    // Date filter
+    let dateMatch = true;
+    if (dateFilter) {
+      const filterDateObj = new Date(dateFilter);
+      const rowDateObj = new Date(dateText);
+      dateMatch = filterDateObj.toDateString() === rowDateObj.toDateString();
+    }
+    
+    const showRow = statusMatch && dateMatch;
+    row.style.display = showRow ? '' : 'none';
+    
+    if (showRow) visibleCount++;
+  });
+  
+  // Update stats card
+  const statsCard = document.getElementById('complaintDateStatsCard');
+  const statsText = document.getElementById('complaintDateStatsText');
+  
+  if (dateFilter || statusFilter) {
+    statsCard.style.cssText = 'display: flex !important;';
+    statsCard.classList.remove('d-none');
+    
+    let filterDesc = [];
+    if (dateFilter) {
+      const dateObj = new Date(dateFilter);
+      filterDesc.push(dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+    }
+    if (statusFilter) {
+      filterDesc.push(statusFilter.replace('_', ' ') + ' status');
+    }
+    
+    statsText.innerHTML = `Showing <strong>${visibleCount}</strong> complaint(s) for ${filterDesc.join(', ')}`;
+  } else {
+    statsCard.style.cssText = 'display: none !important;';
+    statsCard.classList.add('d-none');
+  }
+}
+
+// Clear complaint date filter
+function clearComplaintDateFilter() {
+  document.getElementById('complaintDateFilter').value = '';
+  document.getElementById('complaintStatusFilter').value = '';
+  
+  document.querySelectorAll('#complaintsTableBody tr').forEach(row => {
+    row.style.display = '';
+  });
+  
+  const statsCard = document.getElementById('complaintDateStatsCard');
+  statsCard.style.cssText = 'display: none !important;';
+  statsCard.classList.add('d-none');
 }
 
 // View complaint details
@@ -6132,43 +6357,75 @@ function downloadEventPDF(id) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
-  // Add diagonal watermarks
-  doc.setTextColor(245, 245, 245);
-  doc.setFontSize(60);
-  doc.setFont('helvetica', 'bold');
-  doc.text('GREEN BITES', pageWidth / 2, pageHeight / 2 - 20, { angle: 35, align: 'center' });
-  doc.setFontSize(40);
-  doc.text('GREEN BITES', 40, 80, { angle: 35 });
-  doc.text('GREEN BITES', 120, 220, { angle: 35 });
+  // Function to add watermarks across the page
+  function addWatermarks() {
+    doc.setTextColor(240, 240, 240);
+    doc.setFontSize(50);
+    doc.setFont('helvetica', 'bold');
+    doc.setGState(new doc.GState({opacity: 0.15}));
+    
+    // Multiple diagonal watermarks
+    for (let y = 60; y < pageHeight; y += 80) {
+      for (let x = -20; x < pageWidth + 50; x += 100) {
+        doc.text('GREEN BITES', x, y, { angle: 35 });
+      }
+    }
+    doc.setGState(new doc.GState({opacity: 1}));
+  }
+  
+  // Add watermarks first (background)
+  addWatermarks();
   
   // Header Background - Green gradient
   doc.setFillColor(34, 197, 94);
-  doc.rect(0, 0, pageWidth, 50, 'F');
+  doc.rect(0, 0, pageWidth, 55, 'F');
   
   // Header decorative stripe
   doc.setFillColor(22, 163, 74);
-  doc.rect(0, 45, pageWidth, 5, 'F');
+  doc.rect(0, 50, pageWidth, 5, 'F');
   
-  // Logo/Brand name
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(28);
-  doc.setFont('helvetica', 'bold');
-  doc.text('🍃 GREEN BITES', pageWidth / 2, 22, { align: 'center' });
-  
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Campus Canteen - Event Booking Confirmation', pageWidth / 2, 33, { align: 'center' });
-  
-  // Booking ID badge
+  // Logo circle background
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(pageWidth / 2 - 25, 38, 50, 12, 2, 2, 'F');
-  doc.setTextColor(34, 197, 94);
-  doc.setFontSize(10);
+  doc.circle(pageWidth / 2, 18, 12, 'F');
+  
+  // Draw leaf/plant icon (simplified logo representation)
+  doc.setFillColor(34, 197, 94);
+  doc.setDrawColor(34, 197, 94);
+  // Leaf shape
+  doc.ellipse(pageWidth / 2, 16, 6, 8, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.5);
+  // Leaf vein
+  doc.line(pageWidth / 2, 10, pageWidth / 2, 22);
+  doc.line(pageWidth / 2, 14, pageWidth / 2 - 3, 12);
+  doc.line(pageWidth / 2, 16, pageWidth / 2 + 3, 14);
+  doc.line(pageWidth / 2, 18, pageWidth / 2 - 3, 16);
+  doc.line(pageWidth / 2, 20, pageWidth / 2 + 3, 18);
+  
+  // Brand name below logo
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('Booking #' + booking.id, pageWidth / 2, 46, { align: 'center' });
+  doc.text('GREEN BITES', pageWidth / 2, 38, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Campus Canteen - Event Booking Confirmation', pageWidth / 2, 46, { align: 'center' });
   
   doc.setTextColor(0, 0, 0);
-  let yPos = 65;
+  let yPos = 62;
+  
+  // Booking ID badge
+  doc.setFillColor(240, 253, 244);
+  doc.setDrawColor(34, 197, 94);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(pageWidth / 2 - 30, yPos - 5, 60, 12, 3, 3, 'FD');
+  doc.setTextColor(22, 163, 74);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Booking #' + booking.id, pageWidth / 2, yPos + 2, { align: 'center' });
+  
+  yPos += 15;
   
   // Event Type Emojis
   const eventTypeEmojis = {
@@ -6265,28 +6522,45 @@ function downloadEventPDF(id) {
     }
   }
   
-  // Footer
-  yPos = pageHeight - 40;
+  // Footer Background
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, pageHeight - 50, pageWidth, 50, 'F');
   
-  // Footer line
-  doc.setDrawColor(34, 197, 94);
-  doc.setLineWidth(1);
-  doc.line(15, yPos, pageWidth - 15, yPos);
+  // Footer top border
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, pageHeight - 50, pageWidth, 2, 'F');
   
-  yPos += 8;
-  doc.setFontSize(9);
-  doc.setTextColor(100, 100, 100);
-  doc.text('Thank you for choosing Green Bites for your event!', pageWidth / 2, yPos, { align: 'center' });
+  yPos = pageHeight - 42;
+  
+  // Footer logo (mini)
+  doc.setFillColor(34, 197, 94);
+  doc.circle(pageWidth / 2, yPos + 2, 5, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text('GB', pageWidth / 2, yPos + 4, { align: 'center' });
+  
+  yPos += 12;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(34, 197, 94);
+  doc.text('GREEN BITES', pageWidth / 2, yPos, { align: 'center' });
   
   yPos += 6;
   doc.setFontSize(8);
-  doc.text('📞 +8801968-161494 | ✉ sajjadmahmudsuton@gmail.com', pageWidth / 2, yPos, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text('Thank you for choosing Green Bites for your event!', pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 5;
+  doc.setFontSize(7);
+  doc.text('Phone: +8801968-161494  |  Email: sajjadmahmudsuton@gmail.com', pageWidth / 2, yPos, { align: 'center' });
   
   yPos += 5;
   doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, yPos, { align: 'center' });
   
-  yPos += 6;
-  doc.setFontSize(7);
+  yPos += 4;
+  doc.setFontSize(6);
   doc.setTextColor(150, 150, 150);
   doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, yPos, { align: 'center' });
   

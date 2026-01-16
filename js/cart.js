@@ -501,18 +501,18 @@ function renderCartPanel() {
         ${priceDisplay}
       </div>
       <div class="cart-item-quantity">
-        <button class="qty-btn qty-minus" onclick="updateQuantity('${item.id}', -1)">
+        <button type="button" class="qty-btn qty-minus" data-item-id="${item.id}">
           <i class="bi bi-dash"></i>
         </button>
         <span class="qty-value">${item.quantity}</span>
-        <button class="qty-btn qty-plus" onclick="updateQuantity('${item.id}', 1)">
+        <button type="button" class="qty-btn qty-plus" data-item-id="${item.id}">
           <i class="bi bi-plus"></i>
         </button>
       </div>
       <div class="cart-item-total">
         ৳${(item.price * item.quantity).toFixed(0)}
       </div>
-      <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">
+      <button type="button" class="cart-item-remove" data-item-id="${item.id}">
         <i class="bi bi-trash"></i>
       </button>
     </div>
@@ -748,6 +748,48 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // Cart panel quantity buttons - Event delegation for dynamically rendered cart items
+  document.addEventListener('click', async function(e) {
+    const cartPanel = document.getElementById('cartPanel');
+    if (!cartPanel) return;
+    
+    // Check if click is inside cart panel
+    if (!cartPanel.contains(e.target)) return;
+    
+    // Handle minus button
+    if (e.target.closest('.qty-minus')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cartItem = e.target.closest('.cart-item');
+      if (cartItem) {
+        const itemId = cartItem.dataset.id;
+        await updateQuantity(itemId, -1);
+      }
+    }
+    
+    // Handle plus button
+    if (e.target.closest('.qty-plus')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cartItem = e.target.closest('.cart-item');
+      if (cartItem) {
+        const itemId = cartItem.dataset.id;
+        await updateQuantity(itemId, 1);
+      }
+    }
+    
+    // Handle remove button
+    if (e.target.closest('.cart-item-remove')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cartItem = e.target.closest('.cart-item');
+      if (cartItem) {
+        const itemId = cartItem.dataset.id;
+        removeFromCart(itemId);
+      }
+    }
+  });
 
   // Order quantity change handlers
   document.addEventListener('click', async function(e) {
