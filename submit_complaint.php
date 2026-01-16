@@ -10,6 +10,25 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/db.php';
 
+// Check if complaints are enabled
+$complaintsEnabled = true;
+$tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'admin_settings'");
+if (mysqli_num_rows($tableCheck) > 0) {
+    $settingResult = mysqli_query($conn, "SELECT setting_value FROM admin_settings WHERE setting_key = 'complaints_enabled'");
+    if ($setting = mysqli_fetch_assoc($settingResult)) {
+        $complaintsEnabled = $setting['setting_value'] === '1';
+    }
+}
+
+if (!$complaintsEnabled) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Complaint submission is currently closed. Please try again later.',
+        'disabled' => true
+    ]);
+    exit;
+}
+
 // Rate limiting - DISABLED for development
 // $clientIP = getClientIP();
 // if (!checkRateLimit($clientIP . '_complaint', 5, 3600)) {

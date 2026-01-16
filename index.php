@@ -511,6 +511,11 @@ if (isset($_SESSION['user_id'])) {
   <section id="complaintsSection" class="mb-5">
     <div class="container">
       <h3 class="mb-3 text-danger">Complaint</h3>
+      <!-- Complaints Disabled Alert -->
+      <div id="complaintsDisabledAlert" class="alert alert-warning d-none" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span id="complaintsDisabledMessage">Complaint submission is currently closed. Please try again later.</span>
+      </div>
       <form id="complaintForm" action="submit_complaint.php" method="POST" enctype="multipart/form-data" class="card p-3 shadow-sm">
         <div class="mb-3">
           <label class="form-label">Name <span class="text-danger">*</span></label>
@@ -532,7 +537,7 @@ if (isset($_SESSION['user_id'])) {
           <label class="form-label">Add Image (optional)</label>
           <input type="file" class="form-control" id="complaintImage" name="image" accept="image/*">
         </div>
-        <button type="submit" class="btn btn-danger w-100">Submit</button>
+        <button type="submit" class="btn btn-danger w-100" id="complaintSubmitBtn">Submit</button>
         <small id="complaintMsg" class="text-success ms-2"></small>
       </form>
     </div>
@@ -556,6 +561,29 @@ if (isset($_SESSION['user_id'])) {
     const complaintSuccessModal = document.getElementById('complaintSuccessModal');
     const complaintModalClose = document.getElementById('complaintModalClose');
     const complaintMsg = document.getElementById('complaintMsg');
+    const complaintSubmitBtn = document.getElementById('complaintSubmitBtn');
+    const complaintsDisabledAlert = document.getElementById('complaintsDisabledAlert');
+    const complaintsDisabledMessage = document.getElementById('complaintsDisabledMessage');
+    
+    // Check complaint status on page load
+    async function checkComplaintStatus() {
+      try {
+        const response = await fetch('api/check_complaint_status.php');
+        const data = await response.json();
+        if (data.success && !data.enabled) {
+          // Disable complaint form
+          complaintsDisabledAlert.classList.remove('d-none');
+          complaintsDisabledMessage.textContent = data.message;
+          complaintSubmitBtn.disabled = true;
+          complaintSubmitBtn.textContent = 'Submissions Closed';
+          complaintSubmitBtn.classList.remove('btn-danger');
+          complaintSubmitBtn.classList.add('btn-secondary');
+        }
+      } catch (error) {
+        console.error('Error checking complaint status:', error);
+      }
+    }
+    checkComplaintStatus();
 
     if (complaintForm) {
       complaintForm.addEventListener('submit', async function(e) {

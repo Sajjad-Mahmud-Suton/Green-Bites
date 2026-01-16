@@ -1186,7 +1186,7 @@ $csrf_token = $_SESSION['csrf_token'];
             <button class="btn btn-success btn-sm" onclick="openManualOrderModal()">
               <i class="bi bi-plus-circle me-1"></i>Place Manual Order
             </button>
-            <button class="btn btn-outline-primary btn-sm" onclick="exportOrdersPDF()">
+            <button class="btn btn-outline-primary btn-sm" onclick="openOrdersPDFModal()">
               <i class="bi bi-file-pdf me-1"></i>Export PDF
             </button>
           </div>
@@ -1418,9 +1418,16 @@ $csrf_token = $_SESSION['csrf_token'];
       <div class="card-custom">
         <div class="card-header">
           <h5><i class="bi bi-chat-dots me-2"></i>Complaints</h5>
-          <button class="btn btn-success btn-sm" onclick="markAllComplaintsSeen()" id="markAllSeenBtn">
-            <i class="bi bi-check-all me-1"></i>Mark All as Seen
-          </button>
+          <div class="d-flex gap-2 align-items-center">
+            <!-- Complaints Toggle -->
+            <div class="form-check form-switch me-3">
+              <input class="form-check-input" type="checkbox" role="switch" id="complaintsToggle" checked onchange="toggleComplaintsStatus(this.checked)">
+              <label class="form-check-label small" for="complaintsToggle" id="complaintsToggleLabel">Enabled</label>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="markAllComplaintsSeen()" id="markAllSeenBtn">
+              <i class="bi bi-check-all me-1"></i>Mark All as Seen
+            </button>
+          </div>
         </div>
         <div class="card-body p-0">
           <table class="table table-custom" id="complaintsTable">
@@ -2092,6 +2099,43 @@ $csrf_token = $_SESSION['csrf_token'];
 
   </div>
 </main>
+
+<!-- Orders PDF Export Range Modal -->
+<div class="modal fade" id="ordersPDFModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2"></i>Export Orders to PDF</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">Select the range of Order IDs to export:</p>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">From Order ID</label>
+            <input type="number" class="form-control" id="pdfOrderFromId" min="1" placeholder="e.g., 1">
+          </div>
+          <div class="col-6">
+            <label class="form-label">To Order ID</label>
+            <input type="number" class="form-control" id="pdfOrderToId" min="1" placeholder="e.g., 100">
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="pdfExportAll">
+            <label class="form-check-label" for="pdfExportAll">Export all orders (ignore range)</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="exportOrdersPDFWithRange()">
+          <i class="bi bi-download me-1"></i>Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Manual Order Modal -->
 <div class="modal fade" id="manualOrderModal" tabindex="-1">
@@ -3912,6 +3956,239 @@ function exportOrdersPDF() {
   showAlert('PDF Report downloaded!');
 }
 
+// Open Orders PDF Modal
+function openOrdersPDFModal() {
+  // Set default range based on available orders
+  if (ordersData.length > 0) {
+    const ids = ordersData.map(o => parseInt(o.id));
+    document.getElementById('pdfOrderFromId').value = Math.min(...ids);
+    document.getElementById('pdfOrderToId').value = Math.max(...ids);
+  }
+  document.getElementById('pdfExportAll').checked = false;
+  new bootstrap.Modal(document.getElementById('ordersPDFModal')).show();
+}
+
+// Export Orders PDF with Range
+function exportOrdersPDFWithRange() {
+  const exportAll = document.getElementById('pdfExportAll').checked;
+  const fromId = parseInt(document.getElementById('pdfOrderFromId').value) || 0;
+  const toId = parseInt(document.getElementById('pdfOrderToId').value) || 999999;
+  
+  // Filter orders by range
+  let filteredOrders = ordersData;
+  if (!exportAll) {
+    if (fromId > toId) {
+      showAlert('From ID should be less than To ID', 'warning');
+      return;
+    }
+    filteredOrders = ordersData.filter(o => {
+      const id = parseInt(o.id);
+      return id >= fromId && id <= toId;
+    });
+  }
+  
+  if (filteredOrders.length === 0) {
+    showAlert('No orders found in the selected range', 'warning');
+    return;
+  }
+  
+  // Close modal
+  bootstrap.Modal.getInstance(document.getElementById('ordersPDFModal')).hide();
+  
+  // Generate PDF with filtered orders
+  generateOrdersPDF(filteredOrders, exportAll ? 'All Orders' : `Orders #${fromId} - #${toId}`);
+}
+
+// Generate Orders PDF (reusable)
+function generateOrdersPDF(orders, rangeLabel) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('l', 'mm', 'a4');
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
+  // Add Text Watermarks
+  doc.setTextColor(240, 240, 240);
+  doc.setFontSize(55);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', pageWidth / 2, pageHeight / 2, { angle: 35, align: 'center' });
+  doc.setFontSize(35);
+  doc.text('GREEN BITES', 50, 70, { angle: 35 });
+  doc.text('GREEN BITES', 200, 170, { angle: 35 });
+  doc.text('GREEN BITES', 80, 170, { angle: 35 });
+  
+  doc.setTextColor(0, 0, 0);
+  
+  // Header Background
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 35, 'F');
+  
+  // Header Text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', 15, 15);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Campus Canteen - ' + rangeLabel, 15, 25);
+  
+  // Report Info
+  doc.setFontSize(10);
+  doc.text('Generated: ' + new Date().toLocaleString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }), pageWidth - 15, 15, { align: 'right' });
+  doc.text('Total Orders: ' + orders.length, pageWidth - 15, 22, { align: 'right' });
+  
+  const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.total_price || 0), 0);
+  doc.text('Total Revenue: TK ' + totalRevenue.toFixed(0), pageWidth - 15, 29, { align: 'right' });
+  
+  doc.setTextColor(0, 0, 0);
+  
+  // Summary Stats
+  const pendingCount = orders.filter(o => (o.status || '').toLowerCase() === 'pending').length;
+  const completedCount = orders.filter(o => (o.status || '').toLowerCase() === 'completed').length;
+  const processingCount = orders.filter(o => (o.status || '').toLowerCase() === 'processing').length;
+  const deliveredCount = orders.filter(o => (o.status || '').toLowerCase() === 'delivered').length;
+  
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(15, 40, pageWidth - 30, 15, 3, 3, 'F');
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  doc.text('Summary:', 20, 49);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(245, 158, 11);
+  doc.text('Pending: ' + pendingCount, 55, 49);
+  doc.setTextColor(59, 130, 246);
+  doc.text('Processing: ' + processingCount, 100, 49);
+  doc.setTextColor(34, 197, 94);
+  doc.text('Completed: ' + completedCount, 155, 49);
+  doc.setTextColor(16, 185, 129);
+  doc.text('Delivered: ' + deliveredCount, 210, 49);
+  doc.setTextColor(0, 0, 0);
+  
+  // Prepare table data
+  const tableData = orders.map(o => {
+    const items = JSON.parse(o.items || '[]');
+    const itemsList = items.map(i => `${i.title || i.name} x${i.quantity}`).join(', ');
+    return [
+      '#' + o.id,
+      o.full_name || 'Guest',
+      o.email || 'N/A',
+      itemsList.length > 50 ? itemsList.substring(0, 47) + '...' : itemsList,
+      'TK ' + parseFloat(o.total_price).toFixed(0),
+      (o.status || 'Pending').toUpperCase(),
+      new Date(o.order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ];
+  });
+  
+  // Create table
+  doc.autoTable({
+    head: [['Order ID', 'Customer', 'Email', 'Items', 'Total', 'Status', 'Date']],
+    body: tableData,
+    startY: 60,
+    styles: { fontSize: 9, cellPadding: 4 },
+    headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold', halign: 'center' },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 20 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 45 },
+      3: { cellWidth: 70 },
+      4: { halign: 'right', cellWidth: 25 },
+      5: { halign: 'center', cellWidth: 25 },
+      6: { halign: 'center', cellWidth: 30 }
+    },
+    didParseCell: function(data) {
+      if (data.column.index === 5 && data.section === 'body') {
+        const status = (data.cell.raw || '').toLowerCase();
+        if (status === 'completed' || status === 'delivered') {
+          data.cell.styles.textColor = [34, 197, 94];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'pending') {
+          data.cell.styles.textColor = [245, 158, 11];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'processing') {
+          data.cell.styles.textColor = [59, 130, 246];
+          data.cell.styles.fontStyle = 'bold';
+        } else if (status === 'cancelled') {
+          data.cell.styles.textColor = [239, 68, 68];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
+  });
+  
+  // Footer
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setDrawColor(34, 197, 94);
+  doc.setLineWidth(0.5);
+  doc.line(15, finalY, pageWidth - 15, finalY);
+  
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Green Bites Campus Canteen | Contact: +8801968-161494 | Email: sajjadmahmudsuton@gmail.com', pageWidth / 2, finalY + 7, { align: 'center' });
+  doc.text('This is a computer generated report.', pageWidth / 2, finalY + 12, { align: 'center' });
+  
+  // Save PDF
+  const fileName = 'GreenBites_Orders_' + new Date().toISOString().split('T')[0] + '.pdf';
+  doc.save(fileName);
+  showAlert('PDF Report downloaded!', 'success');
+}
+
+// Complaints Toggle Functions
+async function loadComplaintsStatus() {
+  try {
+    const response = await fetch('api/settings.php?key=complaints_enabled');
+    const data = await response.json();
+    if (data.success) {
+      const isEnabled = data.value === '1';
+      document.getElementById('complaintsToggle').checked = isEnabled;
+      document.getElementById('complaintsToggleLabel').textContent = isEnabled ? 'Enabled' : 'Disabled';
+      document.getElementById('complaintsToggleLabel').className = isEnabled ? 'form-check-label small text-success' : 'form-check-label small text-danger';
+    }
+  } catch (error) {
+    console.error('Error loading complaints status:', error);
+  }
+}
+
+async function toggleComplaintsStatus(enabled) {
+  try {
+    const response = await fetch('api/settings.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        key: 'complaints_enabled', 
+        value: enabled ? '1' : '0',
+        csrf_token: csrfToken 
+      }),
+      credentials: 'same-origin'
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      document.getElementById('complaintsToggleLabel').textContent = enabled ? 'Enabled' : 'Disabled';
+      document.getElementById('complaintsToggleLabel').className = enabled ? 'form-check-label small text-success' : 'form-check-label small text-danger';
+      showAlert(enabled ? 'Complaints enabled!' : 'Complaints disabled!', 'success');
+    } else {
+      showAlert(result.message || 'Failed to update', 'danger');
+      document.getElementById('complaintsToggle').checked = !enabled;
+    }
+  } catch (error) {
+    console.error('Error toggling complaints:', error);
+    showAlert('Error updating complaints status', 'danger');
+    document.getElementById('complaintsToggle').checked = !enabled;
+  }
+}
+
+// Load complaints status on page load
+document.addEventListener('DOMContentLoaded', function() {
+  loadComplaintsStatus();
+});
+
 // Category Data
 const categoryData = <?php echo json_encode($categories); ?>;
 
@@ -5508,6 +5785,9 @@ function renderEventBookings(bookings) {
             <button class="btn btn-outline-primary" onclick="viewEventBooking(${booking.id})" title="View Details">
               <i class="bi bi-eye"></i>
             </button>
+            <button class="btn btn-outline-info" onclick="downloadEventPDF(${booking.id})" title="Download PDF">
+              <i class="bi bi-file-pdf"></i>
+            </button>
             <button class="btn btn-outline-success" onclick="editEventBooking(${booking.id})" title="Edit">
               <i class="bi bi-pencil"></i>
             </button>
@@ -5839,6 +6119,181 @@ function resetEventFilters() {
   document.getElementById('eventTypeFilter').value = '';
   document.getElementById('eventSearch').value = '';
   loadEventBookings();
+}
+
+// Download Event Booking PDF
+function downloadEventPDF(id) {
+  const booking = eventBookingsData.find(b => b.id == id);
+  if (!booking) return;
+  
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4'); // Portrait
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
+  // Add diagonal watermarks
+  doc.setTextColor(245, 245, 245);
+  doc.setFontSize(60);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GREEN BITES', pageWidth / 2, pageHeight / 2 - 20, { angle: 35, align: 'center' });
+  doc.setFontSize(40);
+  doc.text('GREEN BITES', 40, 80, { angle: 35 });
+  doc.text('GREEN BITES', 120, 220, { angle: 35 });
+  
+  // Header Background - Green gradient
+  doc.setFillColor(34, 197, 94);
+  doc.rect(0, 0, pageWidth, 50, 'F');
+  
+  // Header decorative stripe
+  doc.setFillColor(22, 163, 74);
+  doc.rect(0, 45, pageWidth, 5, 'F');
+  
+  // Logo/Brand name
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('🍃 GREEN BITES', pageWidth / 2, 22, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Campus Canteen - Event Booking Confirmation', pageWidth / 2, 33, { align: 'center' });
+  
+  // Booking ID badge
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(pageWidth / 2 - 25, 38, 50, 12, 2, 2, 'F');
+  doc.setTextColor(34, 197, 94);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Booking #' + booking.id, pageWidth / 2, 46, { align: 'center' });
+  
+  doc.setTextColor(0, 0, 0);
+  let yPos = 65;
+  
+  // Event Type Emojis
+  const eventTypeEmojis = {
+    birthday: '🎂', wedding: '💒', corporate: '🏢',
+    anniversary: '💑', graduation: '🎓', reunion: '👨‍👩‍👧‍👦', other: '📅'
+  };
+  const emoji = eventTypeEmojis[booking.event_type] || '📅';
+  
+  // Event Title Section
+  doc.setFillColor(240, 253, 244);
+  doc.roundedRect(15, yPos, pageWidth - 30, 25, 3, 3, 'F');
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(22, 163, 74);
+  doc.text(emoji + ' ' + booking.event_name, pageWidth / 2, yPos + 10, { align: 'center' });
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(booking.event_type.charAt(0).toUpperCase() + booking.event_type.slice(1) + ' Event', pageWidth / 2, yPos + 18, { align: 'center' });
+  
+  yPos += 35;
+  
+  // Helper function to draw section
+  function drawSection(title, icon, content) {
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(15, yPos, pageWidth - 30, 8 + content.length * 8, 3, 3, 'F');
+    doc.setDrawColor(34, 197, 94);
+    doc.setLineWidth(0.5);
+    doc.line(15, yPos + 8, pageWidth - 15, yPos + 8);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(22, 163, 74);
+    doc.text(icon + ' ' + title, 20, yPos + 6);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(10);
+    
+    let innerY = yPos + 14;
+    content.forEach(item => {
+      doc.setTextColor(100, 100, 100);
+      doc.text(item.label + ':', 22, innerY);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont('helvetica', 'bold');
+      doc.text(item.value, 70, innerY);
+      doc.setFont('helvetica', 'normal');
+      innerY += 8;
+    });
+    
+    yPos += 12 + content.length * 8;
+  }
+  
+  // Event Details Section
+  drawSection('Event Details', '📅', [
+    { label: 'Date', value: formatDate(booking.event_date) },
+    { label: 'Time', value: formatTime(booking.event_time) + (booking.end_time ? ' - ' + formatTime(booking.end_time) : '') },
+    { label: 'Guests', value: booking.guest_count + ' people' },
+    { label: 'Venue', value: booking.venue || 'Green Bites Restaurant' },
+    { label: 'Status', value: booking.booking_status.toUpperCase() }
+  ]);
+  
+  yPos += 5;
+  
+  // Customer Details Section
+  drawSection('Customer Information', '👤', [
+    { label: 'Name', value: booking.customer_name },
+    { label: 'Phone', value: booking.customer_phone },
+    { label: 'Email', value: booking.customer_email || 'N/A' }
+  ]);
+  
+  yPos += 5;
+  
+  // Payment Details Section
+  const dueAmount = parseFloat(booking.total_amount) - parseFloat(booking.advance_amount);
+  drawSection('Payment Details', '💰', [
+    { label: 'Package', value: booking.package_type.toUpperCase() },
+    { label: 'Total Amount', value: 'TK ' + formatNumber(booking.total_amount) },
+    { label: 'Advance Paid', value: 'TK ' + formatNumber(booking.advance_amount) },
+    { label: 'Due Amount', value: 'TK ' + formatNumber(dueAmount) },
+    { label: 'Payment', value: booking.payment_status.toUpperCase() }
+  ]);
+  
+  // Additional Notes if any
+  if (booking.special_requirements || booking.menu_items || booking.decorations) {
+    yPos += 5;
+    let additionalContent = [];
+    if (booking.menu_items) additionalContent.push({ label: 'Menu', value: booking.menu_items.substring(0, 50) + (booking.menu_items.length > 50 ? '...' : '') });
+    if (booking.decorations) additionalContent.push({ label: 'Decor', value: booking.decorations.substring(0, 50) + (booking.decorations.length > 50 ? '...' : '') });
+    if (booking.special_requirements) additionalContent.push({ label: 'Special', value: booking.special_requirements.substring(0, 50) + (booking.special_requirements.length > 50 ? '...' : '') });
+    
+    if (additionalContent.length > 0) {
+      drawSection('Additional Details', '📝', additionalContent);
+    }
+  }
+  
+  // Footer
+  yPos = pageHeight - 40;
+  
+  // Footer line
+  doc.setDrawColor(34, 197, 94);
+  doc.setLineWidth(1);
+  doc.line(15, yPos, pageWidth - 15, yPos);
+  
+  yPos += 8;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Thank you for choosing Green Bites for your event!', pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 6;
+  doc.setFontSize(8);
+  doc.text('📞 +8801968-161494 | ✉ sajjadmahmudsuton@gmail.com', pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 5;
+  doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 6;
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, yPos, { align: 'center' });
+  
+  // Save PDF
+  const fileName = `GreenBites_Event_${booking.id}_${booking.event_name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+  doc.save(fileName);
+  showAlert('Event booking PDF downloaded!', 'success');
 }
 </script>
 </body>
