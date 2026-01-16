@@ -6356,6 +6356,8 @@ function downloadEventPDF(id) {
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
+  const footerHeight = 45; // Reserve space for footer
+  const maxContentY = pageHeight - footerHeight - 10; // Max Y before footer
   
   // Function to add watermarks across the page
   function addWatermarks() {
@@ -6378,109 +6380,113 @@ function downloadEventPDF(id) {
   
   // Header Background - Green gradient
   doc.setFillColor(34, 197, 94);
-  doc.rect(0, 0, pageWidth, 55, 'F');
+  doc.rect(0, 0, pageWidth, 50, 'F');
   
   // Header decorative stripe
   doc.setFillColor(22, 163, 74);
-  doc.rect(0, 50, pageWidth, 5, 'F');
+  doc.rect(0, 46, pageWidth, 4, 'F');
   
   // Logo circle background
   doc.setFillColor(255, 255, 255);
-  doc.circle(pageWidth / 2, 18, 12, 'F');
+  doc.circle(pageWidth / 2, 16, 10, 'F');
   
   // Draw leaf/plant icon (simplified logo representation)
   doc.setFillColor(34, 197, 94);
   doc.setDrawColor(34, 197, 94);
   // Leaf shape
-  doc.ellipse(pageWidth / 2, 16, 6, 8, 'F');
+  doc.ellipse(pageWidth / 2, 15, 5, 7, 'F');
   doc.setFillColor(255, 255, 255);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.4);
   // Leaf vein
-  doc.line(pageWidth / 2, 10, pageWidth / 2, 22);
-  doc.line(pageWidth / 2, 14, pageWidth / 2 - 3, 12);
-  doc.line(pageWidth / 2, 16, pageWidth / 2 + 3, 14);
-  doc.line(pageWidth / 2, 18, pageWidth / 2 - 3, 16);
-  doc.line(pageWidth / 2, 20, pageWidth / 2 + 3, 18);
+  doc.line(pageWidth / 2, 10, pageWidth / 2, 20);
+  doc.line(pageWidth / 2, 13, pageWidth / 2 - 2.5, 11);
+  doc.line(pageWidth / 2, 15, pageWidth / 2 + 2.5, 13);
+  doc.line(pageWidth / 2, 17, pageWidth / 2 - 2.5, 15);
   
   // Brand name below logo
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('GREEN BITES', pageWidth / 2, 38, { align: 'center' });
+  doc.text('GREEN BITES', pageWidth / 2, 34, { align: 'center' });
   
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Campus Canteen - Event Booking Confirmation', pageWidth / 2, 46, { align: 'center' });
+  doc.text('Campus Canteen - Event Booking Confirmation', pageWidth / 2, 42, { align: 'center' });
   
   doc.setTextColor(0, 0, 0);
-  let yPos = 62;
+  let yPos = 56;
   
   // Booking ID badge
   doc.setFillColor(240, 253, 244);
   doc.setDrawColor(34, 197, 94);
   doc.setLineWidth(0.5);
-  doc.roundedRect(pageWidth / 2 - 30, yPos - 5, 60, 12, 3, 3, 'FD');
+  doc.roundedRect(pageWidth / 2 - 25, yPos - 4, 50, 10, 2, 2, 'FD');
   doc.setTextColor(22, 163, 74);
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('Booking #' + booking.id, pageWidth / 2, yPos + 2, { align: 'center' });
   
-  yPos += 15;
-  
-  // Event Type Emojis
-  const eventTypeEmojis = {
-    birthday: '🎂', wedding: '💒', corporate: '🏢',
-    anniversary: '💑', graduation: '🎓', reunion: '👨‍👩‍👧‍👦', other: '📅'
-  };
-  const emoji = eventTypeEmojis[booking.event_type] || '📅';
+  yPos += 14;
   
   // Event Title Section
   doc.setFillColor(240, 253, 244);
-  doc.roundedRect(15, yPos, pageWidth - 30, 25, 3, 3, 'F');
-  doc.setFontSize(16);
+  doc.roundedRect(15, yPos, pageWidth - 30, 20, 3, 3, 'F');
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(22, 163, 74);
-  doc.text(emoji + ' ' + booking.event_name, pageWidth / 2, yPos + 10, { align: 'center' });
-  doc.setFontSize(11);
+  doc.text(booking.event_name, pageWidth / 2, yPos + 8, { align: 'center' });
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text(booking.event_type.charAt(0).toUpperCase() + booking.event_type.slice(1) + ' Event', pageWidth / 2, yPos + 18, { align: 'center' });
+  doc.text(booking.event_type.charAt(0).toUpperCase() + booking.event_type.slice(1) + ' Event', pageWidth / 2, yPos + 15, { align: 'center' });
   
-  yPos += 35;
+  yPos += 28;
   
-  // Helper function to draw section
-  function drawSection(title, icon, content) {
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(15, yPos, pageWidth - 30, 8 + content.length * 8, 3, 3, 'F');
-    doc.setDrawColor(34, 197, 94);
-    doc.setLineWidth(0.5);
-    doc.line(15, yPos + 8, pageWidth - 15, yPos + 8);
+  // Helper function to draw section with overflow check
+  function drawSection(title, content) {
+    const sectionHeight = 10 + content.length * 7;
     
-    doc.setFontSize(11);
+    // Check if section fits, if not, reduce content or skip
+    if (yPos + sectionHeight > maxContentY) {
+      return false; // Cannot fit
+    }
+    
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(15, yPos, pageWidth - 30, sectionHeight, 2, 2, 'F');
+    doc.setDrawColor(34, 197, 94);
+    doc.setLineWidth(0.3);
+    doc.line(15, yPos + 7, pageWidth - 15, yPos + 7);
+    
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(22, 163, 74);
-    doc.text(icon + ' ' + title, 20, yPos + 6);
+    doc.text(title, 20, yPos + 5);
     
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     
-    let innerY = yPos + 14;
+    let innerY = yPos + 12;
     content.forEach(item => {
       doc.setTextColor(100, 100, 100);
       doc.text(item.label + ':', 22, innerY);
       doc.setTextColor(30, 30, 30);
       doc.setFont('helvetica', 'bold');
-      doc.text(item.value, 70, innerY);
+      // Truncate long values
+      let displayValue = String(item.value);
+      if (displayValue.length > 45) {
+        displayValue = displayValue.substring(0, 42) + '...';
+      }
+      doc.text(displayValue, 65, innerY);
       doc.setFont('helvetica', 'normal');
-      innerY += 8;
+      innerY += 7;
     });
     
-    yPos += 12 + content.length * 8;
+    yPos += sectionHeight + 4;
+    return true;
   }
   
   // Event Details Section
-  drawSection('Event Details', '📅', [
+  drawSection('Event Details', [
     { label: 'Date', value: formatDate(booking.event_date) },
     { label: 'Time', value: formatTime(booking.event_time) + (booking.end_time ? ' - ' + formatTime(booking.end_time) : '') },
     { label: 'Guests', value: booking.guest_count + ' people' },
@@ -6488,20 +6494,16 @@ function downloadEventPDF(id) {
     { label: 'Status', value: booking.booking_status.toUpperCase() }
   ]);
   
-  yPos += 5;
-  
   // Customer Details Section
-  drawSection('Customer Information', '👤', [
+  drawSection('Customer Information', [
     { label: 'Name', value: booking.customer_name },
     { label: 'Phone', value: booking.customer_phone },
     { label: 'Email', value: booking.customer_email || 'N/A' }
   ]);
   
-  yPos += 5;
-  
   // Payment Details Section
   const dueAmount = parseFloat(booking.total_amount) - parseFloat(booking.advance_amount);
-  drawSection('Payment Details', '💰', [
+  drawSection('Payment Details', [
     { label: 'Package', value: booking.package_type.toUpperCase() },
     { label: 'Total Amount', value: 'TK ' + formatNumber(booking.total_amount) },
     { label: 'Advance Paid', value: 'TK ' + formatNumber(booking.advance_amount) },
@@ -6509,60 +6511,59 @@ function downloadEventPDF(id) {
     { label: 'Payment', value: booking.payment_status.toUpperCase() }
   ]);
   
-  // Additional Notes if any
+  // Additional Notes if any (only if space available)
   if (booking.special_requirements || booking.menu_items || booking.decorations) {
-    yPos += 5;
     let additionalContent = [];
-    if (booking.menu_items) additionalContent.push({ label: 'Menu', value: booking.menu_items.substring(0, 50) + (booking.menu_items.length > 50 ? '...' : '') });
-    if (booking.decorations) additionalContent.push({ label: 'Decor', value: booking.decorations.substring(0, 50) + (booking.decorations.length > 50 ? '...' : '') });
-    if (booking.special_requirements) additionalContent.push({ label: 'Special', value: booking.special_requirements.substring(0, 50) + (booking.special_requirements.length > 50 ? '...' : '') });
+    if (booking.menu_items) additionalContent.push({ label: 'Menu', value: booking.menu_items });
+    if (booking.decorations) additionalContent.push({ label: 'Decor', value: booking.decorations });
+    if (booking.special_requirements) additionalContent.push({ label: 'Special', value: booking.special_requirements });
     
     if (additionalContent.length > 0) {
-      drawSection('Additional Details', '📝', additionalContent);
+      drawSection('Additional Details', additionalContent);
     }
   }
   
-  // Footer Background
+  // Footer Background - Fixed at bottom
   doc.setFillColor(248, 250, 252);
-  doc.rect(0, pageHeight - 50, pageWidth, 50, 'F');
+  doc.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
   
   // Footer top border
   doc.setFillColor(34, 197, 94);
-  doc.rect(0, pageHeight - 50, pageWidth, 2, 'F');
+  doc.rect(0, pageHeight - footerHeight, pageWidth, 2, 'F');
   
-  yPos = pageHeight - 42;
+  let footerY = pageHeight - footerHeight + 8;
   
   // Footer logo (mini)
   doc.setFillColor(34, 197, 94);
-  doc.circle(pageWidth / 2, yPos + 2, 5, 'F');
+  doc.circle(pageWidth / 2, footerY, 4, 'F');
   doc.setFillColor(255, 255, 255);
-  doc.setFontSize(8);
+  doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
-  doc.text('GB', pageWidth / 2, yPos + 4, { align: 'center' });
+  doc.text('GB', pageWidth / 2, footerY + 2, { align: 'center' });
   
-  yPos += 12;
+  footerY += 9;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(34, 197, 94);
-  doc.text('GREEN BITES', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('GREEN BITES', pageWidth / 2, footerY, { align: 'center' });
   
-  yPos += 6;
-  doc.setFontSize(8);
+  footerY += 5;
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text('Thank you for choosing Green Bites for your event!', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('Thank you for choosing Green Bites for your event!', pageWidth / 2, footerY, { align: 'center' });
   
-  yPos += 5;
-  doc.setFontSize(7);
-  doc.text('Phone: +8801968-161494  |  Email: sajjadmahmudsuton@gmail.com', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 5;
-  doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 4;
+  footerY += 4;
   doc.setFontSize(6);
+  doc.text('Phone: +8801968-161494  |  Email: sajjadmahmudsuton@gmail.com', pageWidth / 2, footerY, { align: 'center' });
+  
+  footerY += 4;
+  doc.text('Generated: ' + new Date().toLocaleString(), pageWidth / 2, footerY, { align: 'center' });
+  
+  footerY += 4;
+  doc.setFontSize(5);
   doc.setTextColor(150, 150, 150);
-  doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, footerY, { align: 'center' });
   
   // Save PDF
   const fileName = `GreenBites_Event_${booking.id}_${booking.event_name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
